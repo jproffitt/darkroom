@@ -70,20 +70,34 @@ macro_rules! from {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json::json;
+    use serde_json::{from_str, json, to_string};
+
+    macro_rules! test_deserialize {
+        ($name:ident, $expected:expr, $str_json:expr) => {
+            #[test]
+            fn $name() {
+                let actual = from_str($str_json).unwrap();
+                assert_eq!($expected, actual);
+            }
+        };
+    }
+
+    // TODO
+    // macro_rules! test_serialize {
+    //     ($name:ident, $struct:expr, $str_json:expr) => {
+    //         #[test]
+    //         fn $name() {
+    //             let formatted_str_json =
+    // to_string(from_str($str_json).unwrap()).unwrap();
+    // let serialized_struct = to_string($struct).unwrap();
+    // assert_eq!(formatted_str_json, serialized_struct);         }
+    //     };
+    // }
 
     const PROTOCOL_GRPC: &str = r#""GRPC""#;
     const PROTOCOL_HTTP: &str = r#""HTTP""#;
-    #[test]
-    fn protocol() {
-        let grpc_json: Protocol = serde_json::from_str(PROTOCOL_GRPC).unwrap();
-        let grpc: Protocol = Protocol::GRPC;
-        assert_eq!(grpc_json, grpc);
-
-        let http_json: Protocol = serde_json::from_str(PROTOCOL_HTTP).unwrap();
-        let http: Protocol = Protocol::HTTP;
-        assert_eq!(http_json, http);
-    }
+    test_deserialize!(protocol_grpc_de, Protocol::GRPC, PROTOCOL_GRPC);
+    test_deserialize!(protocol_http_de, Protocol::HTTP, PROTOCOL_HTTP);
 
     const REQUEST: &str = r#"
 {
@@ -93,18 +107,16 @@ mod tests {
   "uri": "user_api.User/CreateUser"
 }
 "#;
-    #[test]
-    fn request() {
-        let json: Request = serde_json::from_str(REQUEST).unwrap();
-        let request: Request = Request {
+    test_deserialize!(
+        request_de,
+        Request {
             body: json!({"email": "new_user@humanmail.com"}),
             etc:  json!({}),
             uri:  String::from("user_api.User/CreateUser"),
-        };
-        assert_eq!(json, request);
-    }
-
-    const ETC_REQUEST: &str = r#"
+        },
+        REQUEST
+    );
+    const REQUEST_ETC: &str = r#"
 {
   "header": {
     "Authorization": "${USER_TOKEN}"
@@ -114,50 +126,49 @@ mod tests {
   "uri": "POST /logout/${USER_ID}"
 }
 "#;
-    #[test]
-    fn request_etc() {
-        let etc_json: Request = serde_json::from_str(ETC_REQUEST).unwrap();
-        let etc_request: Request = Request {
+
+    test_deserialize!(
+        request_etc_de,
+        Request {
             body: json!({}),
             etc:  json!({"header": { "Authorization": "${USER_TOKEN}" }, "id": "007"}),
             uri:  String::from("POST /logout/${USER_ID}"),
-        };
-        assert_eq!(etc_json, etc_request);
-    }
+        },
+        REQUEST_ETC
+    );
+
     const RESPONSE: &str = r#"
 {
   "body": "created user: ${USER_ID}",
   "status": 0
 }
 "#;
-    #[test]
-    fn response() {
-        let json: Response = serde_json::from_str(RESPONSE).unwrap();
-        let response: Response = Response {
+    test_deserialize!(
+        response_de,
+        Response {
             body:   json!("created user: ${USER_ID}"),
             etc:    json!({}),
             status: 0,
-        };
-        assert_eq!(json, response);
-    }
+        },
+        RESPONSE
+    );
 
-    const ETC_RESPONSE: &str = r#"
+    const RESPONSE_ETC: &str = r#"
 {
   "body": "created user: ${USER_ID}",
   "user_level": "admin",
   "status": 0
 }
 "#;
-    #[test]
-    fn response_etc() {
-        let etc_json: Response = serde_json::from_str(ETC_RESPONSE).unwrap();
-        let etc_response: Response = Response {
+    test_deserialize!(
+        response_etc_de,
+        Response {
             body:   json!("created user: ${USER_ID}"),
             etc:    json!({"user_level": "admin"}),
             status: 0,
-        };
-        assert_eq!(etc_json, etc_response);
-    }
+        },
+        RESPONSE_ETC
+    );
 
     const INSTRUCTION_SET: &str = r#"
 {
@@ -171,18 +182,17 @@ mod tests {
   }
 }
 "#;
-    #[test]
-    fn instruction_set() {
-        let json: InstructionSet = serde_json::from_str(INSTRUCTION_SET).unwrap();
-
-        let writes: HashMap<&str, &str> = to![
+    test_deserialize!(
+        instruction_set_de,
+        InstructionSet {
+            reads:  from!["USER_ID", "USER_TOKEN"],
+            writes: to![
             "SESSION_ID" => ".response.body.session_id",
-            "DATETIME" => ".response.body.timestamp"];
-        let reads: HashSet<&str> = from!["USER_ID", "USER_TOKEN"];
+            "DATETIME" => ".response.body.timestamp"],
+        },
+        INSTRUCTION_SET
+    );
 
-        let instructions = InstructionSet { writes, reads };
-        assert_eq!(json, instructions);
-    }
     const FRAME: &str = r#"
 {
   "protocol": "HTTP",
@@ -213,10 +223,9 @@ mod tests {
   }
 }
 "#;
-    #[test]
-    fn frame() {
-        let json: Frame = serde_json::from_str(FRAME).unwrap();
-        let frame = Frame {
+    test_deserialize!(
+        frame_de,
+        Frame {
             protocol: Protocol::HTTP,
             cut:      InstructionSet {
                 reads:  from!["USER_ID", "USER_TOKEN"],
@@ -237,13 +246,7 @@ mod tests {
                 etc:    json!({}),
                 status: 200,
             },
-        };
-        assert_eq!(json, frame, "\njson -> frame");
-
-        // assert_eq!( // TODO macro
-        //     serde_json::to_string_pretty(&frame).unwrap(),
-        //     FRAME,
-        //     "\nframe -> json"
-        // );
-    }
+        },
+        FRAME
+    );
 }
