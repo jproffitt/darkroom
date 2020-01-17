@@ -94,12 +94,12 @@ mod tests {
     //     };
     // }
 
-    const PROTOCOL_GRPC: &str = r#""GRPC""#;
-    const PROTOCOL_HTTP: &str = r#""HTTP""#;
-    test_deserialize!(protocol_grpc_de, Protocol::GRPC, PROTOCOL_GRPC);
-    test_deserialize!(protocol_http_de, Protocol::HTTP, PROTOCOL_HTTP);
+    const PROTOCOL_GRPC_JSON: &str = r#""GRPC""#;
+    const PROTOCOL_HTTP_JSON: &str = r#""HTTP""#;
+    test_deserialize!(protocol_grpc_de, Protocol::GRPC, PROTOCOL_GRPC_JSON);
+    test_deserialize!(protocol_http_de, Protocol::HTTP, PROTOCOL_HTTP_JSON);
 
-    const REQUEST: &str = r#"
+    const REQUEST_JSON: &str = r#"
 {
   "body": {
     "email": "new_user@humanmail.com"
@@ -114,9 +114,9 @@ mod tests {
             etc:  json!({}),
             uri:  String::from("user_api.User/CreateUser"),
         },
-        REQUEST
+        REQUEST_JSON
     );
-    const REQUEST_ETC: &str = r#"
+    const REQUEST_ETC_JSON: &str = r#"
 {
   "header": {
     "Authorization": "${USER_TOKEN}"
@@ -134,10 +134,10 @@ mod tests {
             etc:  json!({"header": { "Authorization": "${USER_TOKEN}" }, "id": "007"}),
             uri:  String::from("POST /logout/${USER_ID}"),
         },
-        REQUEST_ETC
+        REQUEST_ETC_JSON
     );
 
-    const RESPONSE: &str = r#"
+    const RESPONSE_JSON: &str = r#"
 {
   "body": "created user: ${USER_ID}",
   "status": 0
@@ -150,7 +150,7 @@ mod tests {
             etc:    json!({}),
             status: 0,
         },
-        RESPONSE
+        RESPONSE_JSON
     );
 
     const RESPONSE_ETC: &str = r#"
@@ -170,7 +170,7 @@ mod tests {
         RESPONSE_ETC
     );
 
-    const INSTRUCTION_SET: &str = r#"
+    const INSTRUCTION_SET_JSON: &str = r#"
 {
   "from": [
     "USER_ID",
@@ -190,10 +190,10 @@ mod tests {
             "SESSION_ID" => ".response.body.session_id",
             "DATETIME" => ".response.body.timestamp"],
         },
-        INSTRUCTION_SET
+        INSTRUCTION_SET_JSON
     );
 
-    const FRAME: &str = r#"
+    const FRAME_JSON: &str = r#"
 {
   "protocol": "HTTP",
   "cut": {
@@ -247,6 +247,6 @@ mod tests {
                 status: 200,
             },
         },
-        FRAME
+        FRAME_JSON
     );
 }
