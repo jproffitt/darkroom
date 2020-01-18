@@ -42,11 +42,11 @@ struct Request {
 /// https://github.com/Bestowinc/filmReel/blob/supra_dump/frame.md#cut-instruction-set
 #[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 struct InstructionSet<'a> {
-    #[serde(rename(serialize = "from", deserialize = "from"), borrow)]
-    #[serde(serialize_with = "ordered_set")]
+    #[serde(rename(serialize = "from", deserialize = "from"))]
+    #[serde(serialize_with = "ordered_set", borrow)]
     reads:  HashSet<&'a str>,
-    #[serde(rename(serialize = "to", deserialize = "to"), borrow)]
-    #[serde(serialize_with = "ordered_map")]
+    #[serde(rename(serialize = "to", deserialize = "to"))]
+    #[serde(serialize_with = "ordered_map", borrow)]
     writes: HashMap<&'a str, &'a str>,
 }
 
@@ -73,7 +73,16 @@ struct Response {
     status: u32,
 }
 
-// to macro creates a write instuction HashMap
+/// Constructs a set of read instructions from strings meant associated with
+/// variables present in the `Cut Register`
+///
+/// ```edition2018
+/// let write_instructions = to![
+///     "SESSION_ID" => ".response.body.session_id",
+///     "DATETIME" => ".response.body.timestamp"];
+/// ```
+///
+/// https://github.com/Bestowinc/filmReel/blob/supra_dump/cut.md#from-to
 macro_rules! to {
     ($( $key: expr => $val: expr ),*) => {{
          let mut map: HashMap<&str, &str> = std::collections::HashMap::new();
@@ -82,7 +91,15 @@ macro_rules! to {
     }}
 }
 
-// from macro creates a read instuction HashSet
+/// Constructs a set of read instructions from strings meant associated with
+/// variables present in the `Cut Register`
+///
+/// ```edition2018
+/// let read_instructions = from!["USER_ID", "USER_TOKEN"];
+/// ```
+///
+/// https://github.com/Bestowinc/filmReel/blob/supra_dump/cut.md#from-to
+/// TODO check Cut Register during macro call
 macro_rules! from {
     ($( $cut_var: expr ),*) => {{
          let mut set:HashSet<&str> = std::collections::HashSet::new();
@@ -96,6 +113,16 @@ mod tests {
     use super::*;
     use serde_json::{from_str, json, to_string};
 
+    /// test_ser_de tests the serialization and deserialization of frame structs
+    ///
+    /// ```edition2018
+    ///     test_ser_de!(
+    ///             protocol_grpc_ser,  // serialization test name
+    ///                     protocol_grpc_de,   // deserialization test name
+    ///                             Protocol,           // struct type
+    ///                                     Protocol::GRPC,     // struct
+    ///                                             PROTOCOL_GRPC_JSON  // json
+    /// ```                                                 
     macro_rules! test_ser_de {
         ($ser:ident, $de:ident, $type:ty, $struct:expr, $str_json:expr) => {
             #[test]
