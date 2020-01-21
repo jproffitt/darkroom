@@ -19,7 +19,10 @@ impl<'a> Register<'a> {
         Register<'a>: DeserializeOwned,
     {
         match val {
-            Some(val) => serde_json::from_value(val).unwrap(),
+            Some(val) => {
+                let reg: Register = serde_json::from_value(val).unwrap();
+                reg
+            }
             None => {
                 let vars: Vars = HashMap::new();
                 Self { vars }
@@ -36,6 +39,8 @@ type Vars<'a> = HashMap<&'a str, &'a str>;
 #[macro_export]
 macro_rules! register {
     ({$( $key: expr => $val: expr ),*}) => {{
+        use crate::cut::Register;
+
         let mut reg = Register::new(None);
         $(reg.insert($key, $val);)*
         reg
