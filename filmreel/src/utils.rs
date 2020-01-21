@@ -47,9 +47,10 @@ macro_rules! test_ser_de {
     };
 }
 
-pub fn test_deserialize<'de, T>(de_json: T, str_json: &'de str)
+#[cfg(test)]
+pub fn test_deserialize<'a, T>(de_json: T, str_json: &'a str)
 where
-    T: Deserialize<'de> + PartialEq + std::fmt::Debug,
+    T: Deserialize<'a> + PartialEq + std::fmt::Debug,
 {
     let actual = serde_json::from_str(str_json).unwrap();
     assert_eq!(de_json, actual);
