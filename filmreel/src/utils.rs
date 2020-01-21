@@ -1,6 +1,23 @@
-#[cfg(test)]
-#[macro_use]
-use serde_json::*;
+use serde::{Deserialize, Serialize, Serializer};
+use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+
+/// Serializes a HashMap into a BTreeMap, sorting key order for serialization.
+pub fn ordered_map<S>(map: &HashMap<&str, &str>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let ordered: BTreeMap<_, _> = map.iter().collect();
+    ordered.serialize(serializer)
+}
+
+/// Serializes a HashSet into a BTreeSet, sorting entry order for serialization.
+pub fn ordered_set<S>(set: &HashSet<&str>, serializer: S) -> Result<S::Ok, S::Error>
+where
+    S: Serializer,
+{
+    let ordered: BTreeSet<_> = set.iter().collect();
+    ordered.serialize(serializer)
+}
 
 /// test_ser_de tests the serialization and deserialization of frame structs
 ///
@@ -13,9 +30,10 @@ use serde_json::*;
 ///      PROTOCOL_GRPC_JSON  // json format
 /// );
 /// ```
+#[cfg(test)]
 #[macro_export]
 macro_rules! test_ser_de {
-    ($ser:ident, $de:ident, $type:ty, $struct:expr, $str_json:expr) => {
+    ($ser:ident, $de:ident, $struct:expr, $str_json:expr) => {
         #[test]
         fn $ser() {
             let str_val: serde_json::Value = serde_json::from_str($str_json).unwrap();
@@ -24,8 +42,15 @@ macro_rules! test_ser_de {
         }
         #[test]
         fn $de() {
-            let actual: $type = serde_json::from_str($str_json).unwrap();
-            assert_eq!(&$struct, &actual);
+            crate::utils::test_deserialize($struct, $str_json)
         }
     };
+}
+
+pub fn test_deserialize<'de, T>(de_json: T, str_json: &'de str)
+where
+    T: Deserialize<'de> + PartialEq + std::fmt::Debug,
+{
+    let actual = serde_json::from_str(str_json).unwrap();
+    assert_eq!(de_json, actual);
 }

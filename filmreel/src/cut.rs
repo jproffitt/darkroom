@@ -1,37 +1,38 @@
-use serde::{Deserialize, Serialize, Serializer};
+use crate::utils::ordered_map;
+use serde::{Deserialize, Serialize};
 use serde_json;
-use std::collections::{BTreeMap, HashMap};
+use std::collections::HashMap;
 
+/// Holds cut variables and their corresonding values stored in a series of key/value pairs.
+///
+/// [Cut Register](https://github.com/Bestowinc/filmReel/blob/supra_dump/cut.md#cut-register)
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 struct Register<'a> {
-    #[serde(flatten)]
-    #[serde(serialize_with = "ordered_map", borrow)]
+    #[serde(serialize_with = "ordered_map", borrow, flatten)]
     vars: Vars<'a>,
 }
 
-pub type Vars<'a> = HashMap<&'a str, String>;
 impl<'a> Register<'a> {
     pub fn new() -> Self {
         let vars: Vars = HashMap::new();
         Self { vars }
     }
+    pub fn insert(&mut self, key: &'a str, val: &'a str) -> Option<&'a str> {
+        self.vars.insert(key, val)
+    }
 }
+
+pub type Vars<'a> = HashMap<&'a str, &'a str>;
 
 #[macro_export]
 macro_rules! register {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut reg = Register::new();
-         $( reg.vars.insert($key, String::from($val)); )*
-         reg
-    }}
-}
-
-pub fn ordered_map<S>(value: &Vars, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let ordered: BTreeMap<_, _> = value.iter().collect();
-    ordered.serialize(serializer)
+    ({$( $key: expr => $val: expr ),*}) => {
+        {
+            let mut reg = Register::new();
+            $(reg.vars.insert($key, $val);)*
+            reg
+        }
+    }
 }
 
 #[cfg(test)]
@@ -48,10 +49,43 @@ mod tests {
     test_ser_de!(
         register_ser,
         register_de,
-        Register,
-        register![
-          "FIRST_NAME"=> "Primus",
-          "RESPONSE"=> "ALRIGHT"],
+        register!({
+            "FIRST_NAME"=> "Primus",
+            "RESPONSE"=> "ALRIGHT"
+        }),
         REGISTER_JSON
     );
+
+    #[test]
+    fn test_insert() {
+        let mut reg = register!({
+            "FIRST_NAME"=> "Primus",
+            "RESPONSE"=> "ALRIGHT"
+        });
+        reg.insert("LAST_NAME", "Secundus");
+        assert_eq!(
+            register!({
+                "FIRST_NAME"=> "Primus",
+                "RESPONSE"=> "ALRIGHT",
+                "LAST_NAME"=> "Secundus"
+            }),
+            reg
+        );
+    }
+
+    #[test]
+    fn test_update() {
+        let mut reg = register!({
+            "FIRST_NAME"=> "Primus",
+            "RESPONSE"=> "ALRIGHT"
+        });
+        reg.insert("FIRST_NAME", "Pietre");
+        assert_eq!(
+            register!({
+                "FIRST_NAME"=> "Pietre",
+                "RESPONSE"=> "ALRIGHT"
+            }),
+            reg
+        );
+    }
 }

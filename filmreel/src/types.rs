@@ -1,7 +1,7 @@
-use jql;
-use serde::{Deserialize, Serialize, Serializer};
+use crate::utils::{ordered_map, ordered_set};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
+use std::collections::{HashMap, HashSet};
 
 /// Represents the protocol used to send the frame payload.
 ///
@@ -50,22 +50,6 @@ struct InstructionSet<'a> {
     writes: HashMap<&'a str, &'a str>,
 }
 
-pub fn ordered_map<S>(value: &HashMap<&str, &str>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let ordered: BTreeMap<_, _> = value.iter().collect();
-    ordered.serialize(serializer)
-}
-
-fn ordered_set<S>(value: &HashSet<&str>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-{
-    let ordered: BTreeSet<_> = value.iter().collect();
-    ordered.serialize(serializer)
-}
-
 /// Encapsulates the expected response payload.
 ///
 /// [Request Object](https://github.com/Bestowinc/filmReel/blob/supra_dump/frame.md#request)
@@ -81,19 +65,21 @@ struct Response {
 /// variables present in the `Cut Register`
 ///
 /// ```edition2018
-/// let write_instructions = to![
+/// let write_instructions = to!({
 ///     "SESSION_ID" => ".response.body.session_id",
-///     "DATETIME" => ".response.body.timestamp"];
+///     "DATETIME" => ".response.body.timestamp"});
 /// ```
 ///
 /// [`"from"` key](https://github.com/Bestowinc/filmReel/blob/supra_dump/cut.md#from-to)
 #[macro_export]
 macro_rules! to {
-    ($( $key: expr => $val: expr ),*) => {{
-         let mut map: HashMap<&str, &str> = HashMap::new();
-         $( map.insert($key, $val); )*
-         map
-    }}
+    ({$( $key: expr => $val: expr ),*}) => {
+        {
+             let mut map: HashMap<&str, &str> = HashMap::new();
+             $(map.insert($key, $val);)*
+             map
+        }
+    }
 }
 
 /// Constructs a set of read instructions from strings meant associated with
@@ -115,16 +101,15 @@ macro_rules! from {
 }
 
 #[cfg(test)]
-pub mod tests {
+mod tests {
     use super::*;
     use crate::test_ser_de;
-    use serde_json::{from_str, json, to_string};
+    use serde_json::json;
 
     const PROTOCOL_GRPC_JSON: &str = r#""GRPC""#;
     test_ser_de!(
         protocol_grpc_ser,
         protocol_grpc_de,
-        Protocol,
         Protocol::GRPC,
         PROTOCOL_GRPC_JSON
     );
@@ -133,7 +118,6 @@ pub mod tests {
     test_ser_de!(
         protocol_http_ser,
         protocol_http_de,
-        Protocol,
         Protocol::HTTP,
         PROTOCOL_HTTP_JSON
     );
@@ -149,7 +133,6 @@ pub mod tests {
     test_ser_de!(
         request_ser,
         request_de,
-        Request,
         Request {
             body: json!({"email": "new_user@humanmail.com"}),
             etc: json!({}),
@@ -157,6 +140,7 @@ pub mod tests {
         },
         REQUEST_JSON
     );
+
     const REQUEST_ETC_JSON: &str = r#"
     {
       "header": {
@@ -171,7 +155,6 @@ pub mod tests {
     test_ser_de!(
         request_etc_ser,
         request_etc_de,
-        Request,
         Request {
             body: json!({}),
             etc: json!({"header": { "Authorization": "${USER_TOKEN}" }, "id": "007"}),
@@ -189,7 +172,6 @@ pub mod tests {
     test_ser_de!(
         response_ser,
         response_de,
-        Response,
         Response {
             body: json!("created user: ${USER_ID}"),
             etc: json!({}),
@@ -208,7 +190,6 @@ pub mod tests {
     test_ser_de!(
         response_etc_ser,
         response_etc_de,
-        Response,
         Response {
             body: json!("created user: ${USER_ID}"),
             etc: json!({"user_level": "admin"}),
@@ -232,12 +213,12 @@ pub mod tests {
     test_ser_de!(
         instruction_set_ser,
         instruction_set_de,
-        InstructionSet,
         InstructionSet {
             reads: from!["USER_ID", "USER_TOKEN"],
-            writes: to![
+            writes: to!({
                 "SESSION_ID" => ".response.body.session_id",
-                "DATETIME" => ".response.body.timestamp"],
+                "DATETIME" => ".response.body.timestamp"
+            }),
         },
         INSTRUCTION_SET_JSON
     );
@@ -275,13 +256,14 @@ pub mod tests {
     test_ser_de!(
         frame_ser,
         frame_de,
-        Frame,
         Frame {
             protocol: Protocol::HTTP,
             cut: InstructionSet {
                 reads: from!["USER_ID", "USER_TOKEN"],
-                writes: to!["SESSION_ID" => ".response.body.session_id",
-    "DATETIME" => ".response.body.timestamp"],
+                writes: to! ({
+                    "SESSION_ID" => ".response.body.session_id",
+                    "DATETIME" => ".response.body.timestamp"
+                }),
             },
             request: Request {
                 body: json!({}),
