@@ -111,7 +111,7 @@ macro_rules! from {
 }
 
 #[cfg(test)]
-mod tests {
+mod serde_tests {
     use super::*;
     use crate::test_ser_de;
     use serde_json::json;
