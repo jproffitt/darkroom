@@ -232,4 +232,63 @@ mod serde_tests {
         },
         INSTRUCTION_SET_JSON
     );
+
+    const FRAME_JSON: &str = r#"
+    {
+      "protocol": "HTTP",
+      "cut": {
+        "from": [
+          "USER_ID",
+          "USER_TOKEN"
+        ],
+        "to": {
+          "SESSION_ID": ".response.body.session_id",
+          "DATETIME": ".response.body.timestamp"
+        }
+      },
+      "request": {
+        "header": {
+          "Authorization": "${USER_TOKEN}"
+        },
+        "body": {},
+        "uri": "POST /logout/${USER_ID}"
+      },
+      "response": {
+        "body": {
+          "message": "User ${USER_ID} logged out",
+          "session_id": "${SESSION_ID}",
+          "timestamp": "${DATETIME}"
+        },
+        "status": 200
+      }
+    }
+    "#;
+    test_ser_de!(
+        frame_ser,
+        frame_de,
+        Frame {
+            protocol: Protocol::HTTP,
+            cut: InstructionSet {
+                reads: from!["USER_ID", "USER_TOKEN"],
+                writes: to!({"SESSION_ID" => ".response.body.session_id",
+                    "DATETIME" => ".response.body.timestamp"}),
+            },
+            request: Request {
+                body: json!({}),
+                etc: json!({"header": { "Authorization": "${USER_TOKEN}"}}),
+                uri: String::from("POST /logout/${USER_ID}"),
+            },
+
+            response: Response {
+                body: json!({
+                  "message": "User ${USER_ID} logged out",
+                  "session_id": "${SESSION_ID}",
+                  "timestamp": "${DATETIME}"
+                }),
+                etc: json!({}),
+                status: 200,
+            },
+        },
+        FRAME_JSON
+    );
 }

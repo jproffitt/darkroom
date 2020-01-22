@@ -26,7 +26,8 @@ impl<'a> Register<'a> {
             static ref KEY_CHECK: Regex = Regex::new(r"^[A-za-z_]+$").unwrap();
         }
         if !KEY_CHECK.is_match(key) {
-            return Err("Only alphanumeric characters, dashes, and underscores are permitted in cut variable names: [A-za-z_]");
+            return Err(
+                "Only alphanumeric characters, dashes, and underscores are permitted in cut variable names: [A-za-z_]");
         }
         Ok(self.vars.insert(key, val))
     }
@@ -43,7 +44,7 @@ macro_rules! register {
         use crate::cut::Register;
 
         let mut reg = Register::new();
-        $(reg.insert($key, $val).unwrap();)*
+        $(reg.insert($key, $val).expect("RegisterInsertError");)*
         reg
     }}
 }
