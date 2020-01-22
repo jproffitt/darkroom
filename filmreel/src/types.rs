@@ -1,3 +1,4 @@
+use crate::cut::Register;
 use crate::utils::{ordered_map, ordered_set};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -16,11 +17,10 @@ pub struct Frame<'a> {
 }
 
 // impl<'a> Frame<'a> {
-//     fn new(json: Value) -> Self {
-//         let frame = serde_json::from_value(json).unwrap();
-//         frame
+//     fn hydrate(mut self, register: &Register) -> Self {
+//         let cut_vars: Vec<&str> = register.map(|k, _| k).collect();
+//         for (k, _) in register {}
 //     }
-// fn hydrate(mut self, register: &Register) -> Self {}
 // }
 
 /// Represents the protocol used to send the frame payload.

@@ -7,30 +7,21 @@ use std::collections::HashMap;
 /// Holds cut variables and their corresonding values stored in a series of key/value pairs.
 ///
 /// [Cut Register](https://github.com/Bestowinc/filmReel/blob/supra_dump/cut.md#cut-register)
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Default, Debug, PartialEq)]
 pub struct Register<'a> {
     #[serde(serialize_with = "ordered_map", borrow, flatten)]
     vars: Vars<'a>,
 }
 
 impl<'a> Register<'a> {
-    pub fn new(val: Option<Value>) -> Self
-    where
-        Register<'a>: DeserializeOwned,
-    {
-        match val {
-            Some(val) => {
-                let reg: Register = serde_json::from_value(val).unwrap();
-                reg
-            }
-            None => {
-                let vars: Vars = HashMap::new();
-                Self { vars }
-            }
-        }
+    pub fn new() -> Self {
+        Default::default()
     }
     pub fn insert(&mut self, key: &'a str, val: &'a str) -> Option<&'a str> {
         self.vars.insert(key, val)
+    }
+    pub fn iter(&self) -> std::collections::hash_map::Iter<&str, &str> {
+        self.vars.iter()
     }
 }
 
@@ -41,7 +32,7 @@ macro_rules! register {
     ({$( $key: expr => $val: expr ),*}) => {{
         use crate::cut::Register;
 
-        let mut reg = Register::new(None);
+        let mut reg = Register::new();
         $(reg.insert($key, $val);)*
         reg
     }}
@@ -81,6 +72,24 @@ mod tests {
                 "RESPONSE"=> "ALRIGHT"
             }),
             reg
+        );
+    }
+
+    #[test]
+    fn test_iter() {
+        let reg = register!({
+            "FIRST_NAME"=> "Primus",
+            "RESPONSE"=> "ALRIGHT"
+        });
+        let mut kv_vec = vec![];
+
+        for (k, v) in reg.iter() {
+            kv_vec.push(k);
+            kv_vec.push(v);
+        }
+        assert_eq!(
+            vec![&"FIRST_NAME", &"Primus", &"RESPONSE", &"ALRIGHT"],
+            kv_vec
         );
     }
 }
