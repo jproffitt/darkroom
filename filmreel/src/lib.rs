@@ -1,5 +1,5 @@
 mod cut;
-mod types;
+mod frame;
 mod utils;
 
 // AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA
