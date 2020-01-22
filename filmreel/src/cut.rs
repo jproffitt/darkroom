@@ -1,4 +1,5 @@
 use crate::utils::ordered_map;
+use regex::Regex;
 use serde::de::DeserializeOwned;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -88,10 +89,26 @@ mod tests {
             kv_vec.push(v);
         }
         assert_eq!(
-            vec![&"FIRST_NAME", &"Primus", &"RESPONSE", &"ALRIGHT"],
-            kv_vec
+            vec![&"FIRST_NAME", &"Primus", &"RESPONSE", &"ALRIGHT"].sort(),
+            kv_vec.sort()
         );
     }
+
+    // #[test]
+    // fn test_regex() {
+    //     let re = Regex::new(
+    //         r"(?x)
+    //     (\\?) # escape character
+    //     (\$\{) # leading brace
+    //     (.+) # cut variable
+    //     (}) # trailing brace
+    //     ",
+    //     )
+    //     .unwrap();
+    //     let test_string = "ok ${SOME_VAR}";
+    //     let caps = re.captures(test_string).unwrap();
+    //     assert_eq!(caps.get(0).unwrap().as_str(), "")
+    // }
 }
 
 #[cfg(test)]
