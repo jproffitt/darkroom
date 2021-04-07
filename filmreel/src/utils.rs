@@ -120,6 +120,7 @@ mod tests {
                 OBJ_JSON,
                 ".", // returns entire OBJ_JSON
                 vec![],
+                // r#"{"key":{"obj":true,"array":[false,true]}}"#,
             ),
             3 => (
                 OBJ_JSON,
@@ -171,14 +172,14 @@ mod tests {
         };
         let expected_selection = index_iter(&expected_value);
 
-        let selected_value = selector(&mut actual_value).unwrap();
+        let mut selected_value = selector(&mut actual_value).unwrap();
         // 4. assert that the selector_str matches the expected result using successive
         // Index.index_into(Value) calls
         assert_eq!(&expected_selection, selected_value);
 
-        // 5. assert that our selection can be valid in changing the original reference
-        let arr_val = selector(&mut actual_value).unwrap();
-        *arr_val = "new_value".into();
+        // 5. assert that our selection can be validly mutated and reflected in the original value
+        selected_value = selector(&mut actual_value).unwrap();
+        *selected_value = "new_value".into();
         assert_eq!(index_iter(&actual_value), "new_value".to_string());
     }
 }
