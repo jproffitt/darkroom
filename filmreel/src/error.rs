@@ -1,4 +1,6 @@
+use crate::utils::Rule;
 use colored::*;
+use pest::error::Error as PestError;
 use serde_json::error::{Category, Error as SerdeError};
 use std::{error::Error, fmt};
 
@@ -13,6 +15,8 @@ pub enum FrError {
     ReadInstructionf(&'static str, String),
     ReelParse(&'static str),
     Serde(String),
+    Parse(String),
+    Pest(PestError<Rule>),
 }
 
 impl Error for FrError {
@@ -39,6 +43,12 @@ impl From<SerdeError> for FrError {
     }
 }
 
+impl From<PestError<Rule>> for FrError {
+    fn from(err: PestError<Rule>) -> FrError {
+        Self::Pest(err)
+    }
+}
+
 impl fmt::Display for FrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -60,6 +70,14 @@ impl fmt::Display for FrError {
             }
             FrError::Serde(msg) => {
                 writeln!(f, "SerdeError {} {}", "-->".red(), msg)?;
+                Ok(())
+            }
+            FrError::Parse(msg) => {
+                writeln!(f, "ParseError {} {}", "-->".red(), msg)?;
+                Ok(())
+            }
+            FrError::Pest(msg) => {
+                writeln!(f, "PestError {} {}", "-->".red(), msg)?;
                 Ok(())
             }
         }

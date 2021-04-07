@@ -1,0 +1,15 @@
+
+selector = { "."? ~ (step ~ ".")* ~ (step ~ "."?)?  }
+
+step = _{ string | index }
+
+delim = _{ "'" }
+string = { delim ~ inner ~ delim }
+inner = { char* }
+char = {
+    !("\\" | "'") ~ ANY 
+    | "\\" ~ "'"
+}
+
+index = _{ "[" ~ int ~ "]" }
+int = { ASCII_DIGIT+ }
