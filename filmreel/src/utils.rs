@@ -49,8 +49,8 @@ pub struct SelectorParser;
 
 type Selector = Box<dyn Fn(&'_ mut Value) -> Option<&'_ mut Value>>;
 
-pub fn new_selector(selector_str: &str) -> Result<Selector, FrError> {
-    let pairs = SelectorParser::parse(Rule::selector, selector_str)?
+pub fn new_selector(query: &str) -> Result<Selector, FrError> {
+    let pairs = SelectorParser::parse(Rule::selector, query)?
         .next()
         .unwrap();
 
@@ -66,13 +66,10 @@ pub fn new_selector(selector_str: &str) -> Result<Selector, FrError> {
     for pair in pairs.into_inner() {
         match pair.as_rule() {
             Rule::string => {
-                let key = pair
-                    .into_inner()
-                    .next()
-                    .unwrap()
-                    .as_str()
-                    .replace("\\'", "'");
-                let key_selector: Selector = Box::new(move |x: &mut Value| x.get_mut(key.clone()));
+                let key = pair.as_str().replace("\\'", "'");
+                dbg!(&key);
+                let key_selector: Selector =
+                    Box::new(move |x: &mut Value| x.get_mut(key.to_owned()));
                 generator.push(key_selector);
             }
             Rule::int => {
@@ -83,7 +80,14 @@ pub fn new_selector(selector_str: &str) -> Result<Selector, FrError> {
                 let index_selector: Selector = Box::new(move |x: &mut Value| x.get_mut(index));
                 generator.push(index_selector);
             }
-            Rule::selector | Rule::step | Rule::delim | Rule::inner | Rule::char | Rule::index => {
+            // selector will always be the only pair at the top level of the genreated AST
+            // all other rules are "silent" and never tokenized, this is represented by the leading
+            // underscore in pest:
+            //
+            // step = _{ outer | index }
+            //
+            // Therefore all other rules should be unreachable
+            Rule::selector | Rule::step | Rule::outer | Rule::char | Rule::index => {
                 unreachable!()
             }
         }
@@ -105,7 +109,18 @@ mod tests {
     use super::*;
     use rstest::*;
 
-    const OBJ_JSON: &str = r#"{"key":{"obj":true,"array":[false,true]}}"#;
+    const OBJ_JSON: &str = r#"
+{
+  "key": {
+    "obj": true,
+    "array": [
+      false,
+      true
+    ]
+  },
+  "\\'\\'": "value from escaped quotes"
+}
+"#;
     const ARR_JSON: &str = r#"[{"key":"value"},1,[],[true]]"#;
 
     type IndexList = Vec<Box<dyn Index>>;
@@ -120,7 +135,6 @@ mod tests {
                 OBJ_JSON,
                 ".", // returns entire OBJ_JSON
                 vec![],
-                // r#"{"key":{"obj":true,"array":[false,true]}}"#,
             ),
             3 => (
                 OBJ_JSON,
@@ -129,13 +143,14 @@ mod tests {
             ),
             4 => (
                 OBJ_JSON,
-                "", // should panic: None is returned
+                "", // should panic: None is returned due to empty query
                 vec![],
             ),
             5 => (ARR_JSON, "[3].[0]", vec![Box::new(3), Box::new(0)]),
             6 => (ARR_JSON, "[0].'key'", vec![Box::new(0), Box::new("key")]),
             // should panic: acessing index 1 of empty array
             7 => (ARR_JSON, "[2].[1]", vec![Box::new(2), Box::new(1)]),
+            8 => (OBJ_JSON, r#"'\'\''"#, vec![Box::new("\\'\\'")]),
             _ => unreachable!(),
         }
     }
@@ -153,12 +168,12 @@ mod tests {
         case(selector_case(7))
             )]
     fn test_obj_selection(selector_case: (&str, &str, IndexList)) {
-        let (json_str, selector_str, index_list) = selector_case;
+        let (json_str, query, index_list) = selector_case;
         // 1. create two representations of the deserialized JSON
         let mut actual_value: Value = serde_json::from_str(json_str).expect("from_str error");
         let expected_value: Value = serde_json::from_str(json_str).expect("from_str error");
         // 2, create our selector closure;
-        let selector = new_selector(selector_str).unwrap();
+        let selector = new_selector(query).unwrap();
 
         // 3. loop through a list of array and object indices to simulate successive
         // indices so that       | value[a][b][c]

@@ -6,6 +6,7 @@ use std::{error::Error, fmt};
 
 /// An error that occurred during parsing or hydrating a filmReel file
 #[derive(Debug, PartialEq)]
+#[non_exhaustive]
 pub enum FrError {
     FrameParse(&'static str),
     FrameParsef(&'static str, String),
