@@ -158,10 +158,7 @@ pub fn run_take(
             format!("[{}] frame", "Hydrated".green()),
         ]);
 
-        let hidden = match hidden_frame {
-            Some(f) => f,
-            None => return Err(anyhow!("None for interactive hidden_frame")),
-        };
+        let hidden = hidden_frame.ok_or(anyhow!("None for interactive hidden_frame"))?;
         table.add_row(row![
             unhydrated_frame
                 .expect("None for unhydrated_frame")
@@ -181,10 +178,7 @@ pub fn run_take(
         // Read a single byte and discard
         let _ = stdin.read(&mut [0u8]).expect("read stdin panic");
     } else if verbose {
-        let hidden = match hidden_frame {
-            Some(f) => f,
-            None => return Err(anyhow!("None for interactive hidden_frame")),
-        };
+        let hidden = hidden_frame.ok_or(anyhow!("None for interactive hidden_frame"))?;
         info!("{} {}", "Request URI:".yellow(), frame.get_request_uri()?);
         info!("[{}] frame:", "Hydrated".green());
         info!("{}", hidden.to_coloured_tk_json()?);

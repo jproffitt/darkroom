@@ -1,4 +1,9 @@
-use crate::{cut::Register, error::FrError, frame::*, utils::get_jql_value};
+use crate::{
+    cut::Register,
+    error::FrError,
+    frame::*,
+    utils::{get_jql_value, Selector},
+};
 use serde::{Deserialize, Serialize};
 use serde_json::{json, to_value, Value};
 use std::collections::{BTreeMap, HashMap};
@@ -27,6 +32,21 @@ impl<'a> Response<'a> {
     /// traversal: `"response"."body"` should always traverse a serialized Frame struct
     fn to_frame_value(&self) -> Result<Value, FrError> {
         Ok(json!({"response":to_value(self)?}))
+    }
+
+    pub(crate) fn validate(&self) -> Result<(), FrError> {
+        if self.validation.is_none() {
+            return Ok(());
+        }
+        // for now hardcode checking only response body
+        for (k, _) in self.validation.as_ref().unwrap() {
+            if !k.trim_start_matches('.').starts_with("body.response") {
+                return Err(FrError::ReadInstruction(
+                    "validation options currently only support the response body".into(),
+                ));
+            }
+        }
+        Ok(())
     }
 
     /// Using the write instructions found in the frame InstructionSet, look for matches to be
@@ -111,6 +131,46 @@ type Validation<'a> = BTreeMap<&'a str, Validator>;
 pub struct Validator {
     strict: bool,
     sorted: bool,
+}
+
+impl Validator {
+    // partial validation?
+    fn apply_flexible_validation(
+        &self,
+        selector: Selector,
+        self_body: &mut Value,
+        other_body: &mut Value,
+    ) -> Result<(), FrError> {
+        let selection = selector(self_body).ok_or(FrError::ReadInstruction(
+            "selection missing from Frame body",
+        ))?;
+        match selection {
+            Value::Object(o) => {
+                let preserve_keys = o.keys().collect::<Vec<&String>>();
+
+                let other_selection = match selector(other_body) {
+                    Some(Value::Object(o)) => o,
+                    _ => return Ok(()), // if the response selection is not an object or selects nothing (None is returned), exit apply
+                };
+                let other_keys = other_selection
+                    .keys()
+                    .filter(|k| !preserve_keys.contains(k)) // retain keys that are not found in preserve_keys
+                    .map(|k| k.clone())                     // clone the value so that other_selectio can be mutated
+                    .collect::<Vec<String>>();
+
+                for k in other_keys.iter() {
+                    other_selection.remove(k);
+                }
+            }
+            Value::Array(a) => {}
+            _ => {
+                return Err(FrError::ReadInstruction(
+                    "validation selectors must point to a JSON object or array",
+                ))
+            }
+        }
+        Ok(())
+    }
 }
 
 #[cfg(test)]

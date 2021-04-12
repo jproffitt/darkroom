@@ -47,7 +47,7 @@ pub fn get_jql_value(val: &Value, query: &str) -> Result<Value, FrError> {
 #[grammar = "selector.pest"]
 pub struct SelectorParser;
 
-type Selector = Box<dyn Fn(&'_ mut Value) -> Option<&'_ mut Value>>;
+pub type Selector = Box<dyn Fn(&'_ mut Value) -> Option<&'_ mut Value>>;
 
 pub fn new_selector(query: &str) -> Result<Selector, FrError> {
     let pairs = SelectorParser::parse(Rule::selector, query)?
