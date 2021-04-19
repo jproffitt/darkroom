@@ -67,7 +67,6 @@ pub fn new_selector(query: &str) -> Result<Selector, FrError> {
         match pair.as_rule() {
             Rule::string => {
                 let key = pair.as_str().replace("\\'", "'");
-                dbg!(&key);
                 let key_selector: Selector =
                     Box::new(move |x: &mut Value| x.get_mut(key.to_owned()));
                 generator.push(key_selector);
@@ -151,7 +150,7 @@ mod tests {
             // should panic: acessing index 1 of empty array
             7 => (ARR_JSON, "[2].[1]", vec![Box::new(2), Box::new(1)]),
             8 => (OBJ_JSON, r#"'\'\''"#, vec![Box::new("\\'\\'")]),
-            _ => unreachable!(),
+            _ => panic!(),
         }
     }
 

@@ -2,7 +2,7 @@ use crate::{
     cut::Register,
     error::FrError,
     frame::*,
-    utils::{get_jql_value, Selector},
+    utils::{get_jql_value, new_selector, Selector},
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, to_value, Value};
@@ -91,13 +91,37 @@ impl<'a> Response<'a> {
         Ok(None)
     }
 
-    // /// Applies the validations usking the BTree key as the Value selector
-    // pub fn apply_validation(&mut self, other: &mut Self) -> Result<(), FrError> {
-    //     for (query, validation) in self.validator.iter() {
-    //         query.get_jql_value
-    //     }
-    //     Ok(())
-    // }
+    /// Applies the validations using the BTree key as the Value selector
+    pub fn apply_validation(&mut self, other: &mut Self) -> Result<(), FrError> {
+        if self.body.is_none() || other.body.is_none() || self.validation.is_none() {
+            return Ok(());
+        }
+        for (k, v) in self.validation.as_ref().unwrap().iter() {
+            let selector = new_selector(strip_query(k))?;
+            dbg!(strip_query(k));
+            v.apply_partial_validation(
+                selector,
+                self.body.as_mut().unwrap(), // T as Option<&mut Value>.unwrap()
+                other.body.as_mut().unwrap(),
+            )?;
+        }
+        Ok(())
+    }
+}
+
+// For now selector queries are only used on the reponse body
+// selector logic takes the body Value object while mainting a valid
+// "whole file" query for reference's sake
+// "'response'.'body'" => "."
+// "'response'.'body'.'key'" => ".'key'"
+fn strip_query(query: &str) -> &str {
+    let body_query = query
+        .trim_start_matches('.')
+        .trim_start_matches("'response'.'body'");
+    if body_query == "" {
+        return ".";
+    }
+    body_query
 }
 
 impl Default for Response<'_> {
@@ -135,12 +159,13 @@ pub struct Validator {
 
 impl Validator {
     // partial validation?
-    fn apply_flexible_validation(
+    fn apply_partial_validation(
         &self,
         selector: Selector,
         self_body: &mut Value,
         other_body: &mut Value,
     ) -> Result<(), FrError> {
+        dbg!(&self_body);
         let selection = selector(self_body).ok_or(FrError::ReadInstruction(
             "selection missing from Frame body",
         ))?;
@@ -152,17 +177,49 @@ impl Validator {
                     Some(Value::Object(o)) => o,
                     _ => return Ok(()), // if the response selection is not an object or selects nothing (None is returned), exit apply
                 };
+
                 let other_keys = other_selection
                     .keys()
                     .filter(|k| !preserve_keys.contains(k)) // retain keys that are not found in preserve_keys
-                    .map(|k| k.clone())                     // clone the value so that other_selectio can be mutated
+                    .map(|k| k.clone())                     // clone the value so that other_selection can be mutated
                     .collect::<Vec<String>>();
 
                 for k in other_keys.iter() {
                     other_selection.remove(k);
                 }
             }
-            Value::Array(a) => {}
+            Value::Array(self_selection) => {
+                let other_selection = match selector(other_body) {
+                    Some(Value::Array(o)) => o,
+                    _ => return Ok(()),
+                };
+
+                let self_len = self_selection.len();
+                if self_len >= other_selection.len() {
+                    return Ok(()); // do not mutate if self_len is greater that other_selection
+                }
+
+                // do a rolling check seeing if select_selection is a subset of other_selection
+                // Self: [A, B, C]
+                // Other: [A, B, B, C, A, B, C]
+                //
+                // i=0; [ABB] != [ABC]
+                // i=1; [BBC] != [ABC]
+                // i=2; [BCA] != [ABC]
+                // i=3; [CAB] != [ABC]
+                // i=4; [ABC] == [ABC]
+                for (i, _) in other_selection.clone().iter().enumerate() {
+                    if i >= self_len - 1 {
+                        // other_selection[i..] is already larger than self_selection here
+                        // cannot find a partial match at this point
+                        return Ok(());
+                    }
+                    if &other_selection[i..self_len] == self_selection.as_slice() {
+                        *other_selection = self_selection.clone();
+                        return Ok(()); // partial match has been found, no need to iterate further
+                    }
+                }
+            }
             _ => {
                 return Err(FrError::ReadInstruction(
                     "validation selectors must point to a JSON object or array",
@@ -177,6 +234,7 @@ impl Validator {
 mod tests {
     use super::*;
     use crate::{from, to};
+    use rstest::*;
     use serde_json::json;
 
     #[test]
@@ -224,5 +282,49 @@ mod tests {
         expected_match.insert("CREATED", to_value(101010).unwrap());
         expected_match.insert("ignore", to_value("value").unwrap());
         assert_eq!(expected_match, mat.unwrap());
+    }
+
+    fn partial_validation_case(case: u32) -> (&'static str, &'static str, bool) {
+        let frame_response = r#"
+{
+  "validation": {
+    "'response'.'body'": {
+      "partial": true
+    }
+  },
+  "body": {
+    "A": true,
+    "B": true,
+    "C": true
+  },
+  "status": 200
+}
+    "#;
+
+        match case {
+            1 => (
+                frame_response,
+                r#"{"body":{"A": true,"B": true,"C": true},"status": 200}"#,
+                true,
+            ),
+            2 => (
+                frame_response,
+                r#"{"body":{"A": true,"B": true,"C": true, "D": true},"status": 200}"#,
+                true,
+            ),
+            _ => panic!(),
+        }
+    }
+    #[rstest(
+        t_case,
+        case(partial_validation_case(1)),
+        case(partial_validation_case(2))
+    )]
+    fn test_partial_validation(t_case: (&str, &str, bool)) {
+        let mut frame: Response = serde_json::from_str(t_case.0).unwrap();
+        let mut actual: Response = serde_json::from_str(t_case.1).unwrap();
+        let should_match = t_case.2;
+        frame.apply_validation(&mut actual).unwrap();
+        assert!(frame == actual, should_match);
     }
 }
