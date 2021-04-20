@@ -191,11 +191,11 @@ impl Validator {
                     _ => return Ok(()), // if the response selection is not an object or selects nothing (None is returned), exit apply
                 };
 
-                let other_keys = other_selection
+                let other_keys: Vec<String> = other_selection
                     .keys()
                     .filter(|k| !preserve_keys.contains(k)) // retain keys that are not found in preserve_keys
                     .cloned()
-                    .collect::<Vec<String>>();
+                    .collect();
 
                 for k in other_keys.iter() {
                     other_selection.remove(k);
@@ -208,12 +208,13 @@ impl Validator {
                 };
 
                 let self_len = self_selection.len();
+                // do not mutate if self_len is greater that other_selection
                 if self_len >= other_selection.len() {
-                    return Ok(()); // do not mutate if self_len is greater that other_selection
+                    return Ok(());
                 }
 
-                // do a rolling check seeing if select_selection is a subset of other_selection
-                // Self: [A, B, C]
+                // do a rolling check seeing if self_selection is a subset of other_selection
+                // Self:              [A, B, C]
                 // Other: [A, B, B, C, A, B, C]
                 //
                 // i=0; [ABB] != [ABC]
