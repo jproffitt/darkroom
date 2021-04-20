@@ -36,11 +36,11 @@ pub fn run_request<'a>(params: &'a Params, frame: Frame) -> Result<Response<'a>,
 // process_response grabs the expected Response from the given Frame and attempts to match the values
 // present in the payload Response printing a "Value Mismatch" diff to stdout and returning an
 // error if there is not a complete match
-pub fn process_response<'a>(
+pub fn process_response<'b, 'a: 'b>(
     params: &Params,
-    frame: &'a mut Frame,
+    frame: &'a mut Frame<'b>,
     cut_register: &'a mut Register,
-    payload_response: Response,
+    mut payload_response: Response<'b>,
     output: Option<PathBuf>,
 ) -> Result<&'a Register, Error> {
     let payload_matches = frame
@@ -71,6 +71,8 @@ pub fn process_response<'a>(
             Frame::hydrate_val(&frame.cut, etc, &cut_register, false)?;
         }
     }
+
+    frame.response.apply_validation(&mut payload_response)?;
 
     if frame.response != payload_response {
         params.error_timestamp();
@@ -228,7 +230,7 @@ pub fn single_take(cmd: Take, base_params: BaseParams) -> Result<(), Error> {
     if let Err(e) = run_take(
         &mut payload_frame,
         &mut cut_register,
-        &base_params,
+        base_params.clone(),
         cmd.take_out.clone(),
     ) {
         write_cut(
