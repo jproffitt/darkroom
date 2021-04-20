@@ -1,8 +1,8 @@
 use crate::error::FrError;
-use pest::{error::Error, iterators::Pair, Parser};
+use pest::Parser;
 use pest_derive::*;
 use serde::{Serialize, Serializer};
-use serde_json::{value::Index, Value};
+use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet};
 
 /// Serializes a HashMap into a BTreeMap, sorting key order for serialization.
@@ -56,9 +56,9 @@ pub fn new_selector(query: &str) -> Result<Selector, FrError> {
 
     // check for token string length to invalidate instances where selector_str is "" or "''", "''.''",
     // etc...
-    if pairs.as_str().len() == 0 {
+    if pairs.as_str().is_empty() {
         return Err(FrError::ReadInstruction(
-            "validation selector cannot have an empty query".into(),
+            "validation selector cannot have an empty query",
         ));
     }
 

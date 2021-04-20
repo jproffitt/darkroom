@@ -39,10 +39,10 @@ impl<'a> Response<'a> {
             return Ok(());
         }
         // for now hardcode checking only response body
-        for (k, _) in self.validation.as_ref().unwrap() {
+        for k in self.validation.as_ref().unwrap().keys() {
             if !k.trim_start_matches('.').starts_with("'response'.'body'") {
                 return Err(FrError::ReadInstruction(
-                    "validation options currently only support the response body".into(),
+                    "validation options currently only support the response body",
                 ));
             }
         }
@@ -131,7 +131,8 @@ fn strip_query(query: &str) -> &str {
     let body_query = query
         .trim_start_matches('.')
         .trim_start_matches("'response'.'body'");
-    if body_query == "" {
+
+    if body_query.is_empty() {
         return ".";
     }
     body_query
@@ -193,7 +194,7 @@ impl Validator {
                 let other_keys = other_selection
                     .keys()
                     .filter(|k| !preserve_keys.contains(k)) // retain keys that are not found in preserve_keys
-                    .map(|k| k.clone())                     // clone the value so that other_selection can be mutated
+                    .cloned()
                     .collect::<Vec<String>>();
 
                 for k in other_keys.iter() {
