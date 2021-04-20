@@ -221,7 +221,7 @@ impl Validator {
                 // i=3; [CAB] != [ABC]
                 // i=4; [ABC] == [ABC]
                 for (i, _) in other_selection.clone().iter().enumerate() {
-                    if i >= self_len {
+                    if i + self_len > other_selection.len() {
                         // other_selection[i..] is already larger than self_selection here
                         // cannot find a partial match at this point
                         return Ok(());
