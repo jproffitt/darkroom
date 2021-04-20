@@ -22,7 +22,7 @@ pub struct Response<'a> {
     //
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub etc:        Option<Value>, // https://github.com/serde-rs/serde/issues/1626
-    #[serde(borrow, skip_serializing_if = "Option::is_none")]
+    #[serde(borrow, skip_serializing)]
     pub validation: Option<Validation<'a>>,
     pub status:     u32,
 }
@@ -97,13 +97,26 @@ impl<'a> Response<'a> {
             return Ok(());
         }
         for (k, v) in self.validation.as_ref().unwrap().iter() {
+            // if no validator operations are needed
+            if !v.partial && !v.unordered {
+                continue;
+            }
             let selector = new_selector(strip_query(k))?;
-            dbg!(strip_query(k));
-            v.apply_partial_validation(
-                selector,
-                self.body.as_mut().unwrap(), // T as Option<&mut Value>.unwrap()
-                other.body.as_mut().unwrap(),
-            )?;
+            if v.partial {
+                v.apply_partial(
+                    selector,
+                    self.body.as_mut().unwrap(), // T as Option<&mut Value>.unwrap()
+                    other.body.as_mut().unwrap(),
+                )?;
+            }
+            // TODO
+            // if v.unordered {
+            //     v.apply_unordered(
+            //         selector,
+            //         self.body.as_mut().unwrap(),
+            //         other.body.as_mut().unwrap(),
+            //     )?;
+            // }
         }
         Ok(())
     }
@@ -153,19 +166,18 @@ type Validation<'a> = BTreeMap<&'a str, Validator>;
 #[derive(Serialize, Clone, Deserialize, Default, Debug, PartialEq)]
 #[serde(default)]
 pub struct Validator {
-    strict: bool,
-    sorted: bool,
+    partial:   bool,
+    unordered: bool,
 }
 
 impl Validator {
     // partial validation?
-    fn apply_partial_validation(
+    fn apply_partial(
         &self,
         selector: Selector,
         self_body: &mut Value,
         other_body: &mut Value,
     ) -> Result<(), FrError> {
-        dbg!(&self_body);
         let selection = selector(self_body).ok_or(FrError::ReadInstruction(
             "selection missing from Frame body",
         ))?;
@@ -209,12 +221,12 @@ impl Validator {
                 // i=3; [CAB] != [ABC]
                 // i=4; [ABC] == [ABC]
                 for (i, _) in other_selection.clone().iter().enumerate() {
-                    if i >= self_len - 1 {
+                    if i >= self_len {
                         // other_selection[i..] is already larger than self_selection here
                         // cannot find a partial match at this point
                         return Ok(());
                     }
-                    if &other_selection[i..self_len] == self_selection.as_slice() {
+                    if &other_selection[i..i + self_len] == self_selection.as_slice() {
                         *other_selection = self_selection.clone();
                         return Ok(()); // partial match has been found, no need to iterate further
                     }
@@ -284,8 +296,8 @@ mod tests {
         assert_eq!(expected_match, mat.unwrap());
     }
 
-    fn partial_validation_case(case: u32) -> (&'static str, &'static str, bool) {
-        let frame_response = r#"
+    fn partial_case(case: u32) -> (&'static str, &'static str, bool) {
+        let frame_obj_response = r#"
 {
   "validation": {
     "'response'.'body'": {
@@ -300,31 +312,82 @@ mod tests {
   "status": 200
 }
     "#;
+        let frame_arr_response = r#"
+{
+  "validation": {
+    "'response'.'body'": {
+      "partial": true
+    }
+  },
+  "body": [
+    "A",
+    "B",
+    "C"
+  ],
+  "status": 200
+}
+    "#;
 
         match case {
             1 => (
-                frame_response,
+                frame_obj_response,
                 r#"{"body":{"A": true,"B": true,"C": true},"status": 200}"#,
                 true,
             ),
             2 => (
-                frame_response,
+                frame_obj_response,
                 r#"{"body":{"A": true,"B": true,"C": true, "D": true},"status": 200}"#,
                 true,
+            ),
+            3 => (
+                frame_obj_response,
+                r#"{"body":{"B": true,"C": true, "D": true},"status": 200}"#,
+                false,
+            ),
+            4 => (
+                // explicitly declare partial validation as false
+                r#"{"validation":{"'response'.'body'":{"partial":false}},
+                    "body":{"A": true,"B": true, "C": true},"status": 200}"#,
+                r#"{"body":{"B": true,"C": true, "D": true},"status": 200}"#,
+                false,
+            ),
+            5 => (
+                frame_arr_response,
+                r#"{"body":["A", "B", "C"],"status": 200}"#,
+                true,
+            ),
+            6 => (
+                frame_arr_response,
+                r#"{"body":["other_value", false, "A", "B", "C"],"status": 200}"#,
+                true,
+            ),
+            7 => (
+                frame_arr_response,
+                r#"{"body":["other_value", false, "B", "C"],"status": 200}"#,
+                false,
             ),
             _ => panic!(),
         }
     }
     #[rstest(
         t_case,
-        case(partial_validation_case(1)),
-        case(partial_validation_case(2))
+        case(partial_case(1)),
+        case(partial_case(2)),
+        case(partial_case(3)),
+        case(partial_case(4)),
+        case(partial_case(5)),
+        case(partial_case(6)),
+        case(partial_case(7))
     )]
     fn test_partial_validation(t_case: (&str, &str, bool)) {
         let mut frame: Response = serde_json::from_str(t_case.0).unwrap();
         let mut actual: Response = serde_json::from_str(t_case.1).unwrap();
         let should_match = t_case.2;
         frame.apply_validation(&mut actual).unwrap();
-        assert!(frame == actual, should_match);
+        if should_match {
+            pretty_assertions::assert_eq!(frame, actual);
+        } else {
+            pretty_assertions::assert_ne!(frame, actual);
+        }
     }
 }
