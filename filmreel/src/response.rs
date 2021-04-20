@@ -40,7 +40,7 @@ impl<'a> Response<'a> {
         }
         // for now hardcode checking only response body
         for (k, _) in self.validation.as_ref().unwrap() {
-            if !k.trim_start_matches('.').starts_with("body.response") {
+            if !k.trim_start_matches('.').starts_with("'response'.'body'") {
                 return Err(FrError::ReadInstruction(
                     "validation options currently only support the response body".into(),
                 ));

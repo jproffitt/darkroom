@@ -43,6 +43,11 @@ pub fn process_response<'a, 'b>(
     mut payload_response: Response<'b>,
     output: Option<PathBuf>,
 ) -> Result<&'a Register, Error> {
+    // ----------------------------------------------------------------------------
+    // apply validation transformations before read and write operations are called
+    frame.response.apply_validation(&mut payload_response)?;
+    // ----------------------------------------------------------------------------
+
     let payload_matches = frame
         .response
         .match_payload_response(&frame.cut, &payload_response)
@@ -71,8 +76,6 @@ pub fn process_response<'a, 'b>(
             Frame::hydrate_val(&frame.cut, etc, &cut_register, false)?;
         }
     }
-
-    frame.response.apply_validation(&mut payload_response)?;
 
     if frame.response != payload_response {
         params.error_timestamp();
