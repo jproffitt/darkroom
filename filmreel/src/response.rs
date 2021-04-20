@@ -101,22 +101,31 @@ impl<'a> Response<'a> {
             if !v.partial && !v.unordered {
                 continue;
             }
+
             let selector = new_selector(strip_query(k))?;
-            if v.partial {
-                v.apply_partial(
-                    selector,
-                    self.body.as_mut().unwrap(), // T as Option<&mut Value>.unwrap()
-                    other.body.as_mut().unwrap(),
-                )?;
+            match (v.partial, v.unordered) {
+                (false, false) => {
+                    continue;
+                }
+                (true, false) => {
+                    v.apply_partial(
+                        selector,
+                        self.body.as_mut().unwrap(), // T as Option<&mut Value>.unwrap()
+                        other.body.as_mut().unwrap(),
+                    )?;
+                }
+                (false, true) => {
+                    unimplemented!();
+                    // TODO
+                    //     v.apply_unordered(
+                    //         selector,
+                    //         self.body.as_mut().unwrap(),
+                    //         other.body.as_mut().unwrap(),
+                    //     )?;
+                    // }
+                }
+                _ => unreachable!(),
             }
-            // TODO
-            // if v.unordered {
-            //     v.apply_unordered(
-            //         selector,
-            //         self.body.as_mut().unwrap(),
-            //         other.body.as_mut().unwrap(),
-            //     )?;
-            // }
         }
         Ok(())
     }
