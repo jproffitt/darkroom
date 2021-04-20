@@ -25,7 +25,7 @@ use std::{
 };
 
 // run_request decides which protocol to use for sending a hydrated Frame Request
-pub fn run_request<'a>(params: &'a Params, frame: Frame) -> Result<Response<'a>, Error> {
+pub fn run_request<'a>(params: Params, frame: Frame) -> Result<Response<'a>, Error> {
     let request_fn = match frame.protocol {
         Protocol::HTTP => http::request,
         Protocol::GRPC => grpc::request,
@@ -36,7 +36,7 @@ pub fn run_request<'a>(params: &'a Params, frame: Frame) -> Result<Response<'a>,
 // process_response grabs the expected Response from the given Frame and attempts to match the values
 // present in the payload Response printing a "Value Mismatch" diff to stdout and returning an
 // error if there is not a complete match
-pub fn process_response<'b, 'a: 'b>(
+pub fn process_response<'a, 'b>(
     params: &Params,
     frame: &'a mut Frame<'b>,
     cut_register: &'a mut Register,
@@ -121,10 +121,10 @@ pub fn process_response<'b, 'a: 'b>(
 ///     expected structure
 ///    - Value Mismatch: output during process_response when the returned JSON values do not
 ///    match
-pub fn run_take(
-    frame: &mut Frame,
-    register: &mut Register,
-    base_params: &BaseParams,
+pub fn run_take<'a>(
+    frame: &'a mut Frame<'a>,
+    register: &'a mut Register,
+    base_params: &'a BaseParams,
     output: Option<PathBuf>,
 ) -> Result<(), Error> {
     let interactive = base_params.interactive;
@@ -195,7 +195,7 @@ pub fn run_take(
                 attempts.ms.to_string().yellow(),
                 "ms",
             );
-            if let Ok(response) = run_request(&params, frame.clone()) {
+            if let Ok(response) = run_request(params.clone(), frame.clone()) {
                 if process_response(&params, frame, register, response, output.clone()).is_ok() {
                     return Ok(());
                 }
@@ -210,7 +210,7 @@ pub fn run_take(
         );
     }
 
-    let response = run_request(&params, frame.clone())?;
+    let response = run_request(params.clone(), frame.clone())?;
     match process_response(&params, frame, register, response, output) {
         Ok(_) => Ok(()),
         Err(e) => Err(e),
@@ -230,7 +230,7 @@ pub fn single_take(cmd: Take, base_params: BaseParams) -> Result<(), Error> {
     if let Err(e) = run_take(
         &mut payload_frame,
         &mut cut_register,
-        base_params.clone(),
+        &base_params,
         cmd.take_out.clone(),
     ) {
         write_cut(
