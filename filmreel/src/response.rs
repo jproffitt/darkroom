@@ -194,10 +194,11 @@ impl Validator {
         match selection {
             Value::Object(o) => {
                 let preserve_keys = o.keys().collect::<Vec<&String>>();
-
+                // if the response selection is not an object or selects nothing (None is returned)
+                // return early
                 let other_selection = match selector(other_body) {
                     Some(Value::Object(o)) => o,
-                    _ => return Ok(()), // if the response selection is not an object or selects nothing (None is returned), exit apply
+                    _ => return Ok(()),
                 };
 
                 let other_keys: Vec<String> = other_selection
@@ -223,7 +224,7 @@ impl Validator {
                 }
 
                 // do a rolling check seeing if self_selection is a subset of other_selection
-                // Self:              [A, B, C]
+                // Self:  [            A, B, C]
                 // Other: [A, B, B, C, A, B, C]
                 //
                 // i=0; [ABB] != [ABC]
@@ -231,6 +232,10 @@ impl Validator {
                 // i=2; [BCA] != [ABC]
                 // i=3; [CAB] != [ABC]
                 // i=4; [ABC] == [ABC]
+                //
+                // NOTE: Array partial matches need to be ordered as well as contiguous.
+                // The example below would not result in a match:
+                // Other: [A, B, B, C, A, B, B, C]
                 for (i, _) in other_selection.clone().iter().enumerate() {
                     if i + self_len > other_selection.len() {
                         // other_selection[i..] is already larger than self_selection here
