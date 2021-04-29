@@ -74,10 +74,10 @@ impl Man {
             "cut" => cut(),
             "reel" => reel(),
             "frame" => frame(),
-            "retry-attempts" => retry_attempts(),
+            "retry-attempts" | "attempts" => retry_attempts(),
             "merge-cuts" => merge_cuts(),
-            "ignored-variables" => ignored_variables(),
-            "hidden-variables" => hidden_variables(),
+            "ignored-variables" | "ignore" | "ignored" => ignored_variables(),
+            "hidden-variables" | "hidden" => hidden_variables(),
             _ => {
                 return Err(anyhow!("invalid entry argument\n{}", ENTRY_DOCSTRING));
             }
