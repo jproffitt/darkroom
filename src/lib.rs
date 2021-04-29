@@ -40,17 +40,28 @@ impl log::Log for Logger {
     fn flush(&self) {}
 }
 
+/// show version
+pub const fn version() -> &'static str {
+    env!("CARGO_PKG_VERSION")
+}
+
 /// Darkroom: A contract testing tool built in Rust using the filmReel format.
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(
-    note = "Use `{command_name} man` for details on filmReel works.",
+    note = "Use `{command_name} man` for details on filmReel, the JSON format.",
     example = "Step through the httpbin test in [-i]nteractive mode:
-$ {command_name} -i record ./test_data post"
+$ {command_name} -i record ./test_data post",
+    example = "Echo the origin `${{IP}}` that gets written to the cut register from the httpbin.org POST request:
+dark --cut-out >(jq .IP) take ./test_data/post.01s.body.fr.json --cut ./test_data/post.cut.json"
 )]
 pub struct Command {
     /// enable verbose output
     #[argh(switch, short = 'v')]
-    verbose: bool,
+    verbose:     bool,
+    ///
+    /// show version
+    #[argh(switch, short = 'V')]
+    pub version: bool,
 
     /// fallback address passed to the specified protocol
     #[argh(positional, short = 'a')]
@@ -81,7 +92,7 @@ pub struct Command {
     proto: Vec<PathBuf>,
 
     #[argh(subcommand)]
-    pub nested: SubCommand,
+    pub nested: Option<SubCommand>,
 }
 
 impl Command {
@@ -101,7 +112,14 @@ impl Command {
     }
 
     pub fn get_nested(self) -> SubCommand {
-        self.nested
+        self.nested.unwrap()
+    }
+
+    pub fn get_version(&self) -> (bool, &'static str) {
+        if self.version {
+            return (true, version());
+        }
+        (false, "")
     }
 }
 
@@ -121,27 +139,10 @@ impl Opts {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 pub enum SubCommand {
-    Version(Version),
     Take(Take),
     Record(Record),
     #[cfg(feature = "man")]
     Man(Man),
-}
-
-/// Returns CARGO_PKG_VERSION
-#[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "version")]
-pub struct Version {
-    /// returns cargo package version, this is a temporary argh workaround
-    #[argh(switch)]
-    version: bool,
-}
-
-/// argh version workaround
-pub fn version() -> String {
-    option_env!("CARGO_PKG_VERSION")
-        .unwrap_or("unknown")
-        .to_string()
 }
 
 /// Takes a single frame, emitting the request then validating the returned response

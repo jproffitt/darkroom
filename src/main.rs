@@ -4,6 +4,11 @@ use std::io::{self, Write};
 
 fn main() -> Result<(), Error> {
     let args: Command = argh::from_env();
+    if let (true, v) = args.get_version() {
+        println!("{}", v);
+        return Ok(());
+    }
+
     let opts: Opts = Opts::new(&args);
     let base_params = args.base_params();
     let nested_arg = args.get_nested();
@@ -17,10 +22,6 @@ fn main() -> Result<(), Error> {
     log::set_boxed_logger(Box::new(Logger)).map(|()| log::set_max_level(log_level))?;
 
     match nested_arg {
-        SubCommand::Version(_) => {
-            println!("{}", crate::version());
-            Ok(())
-        }
         #[cfg(feature = "man")]
         SubCommand::Man(cmd) => {
             cmd.output_entry()?;
