@@ -58,11 +58,7 @@ $ {command_name} --cut-out >(jq .IP) take ./test_data/post.01s.body.fr.json --cu
 pub struct Command {
     /// enable verbose output
     #[argh(switch, short = 'v')]
-    verbose:     bool,
-    ///
-    /// show version
-    #[argh(switch, short = 'V')]
-    pub version: bool,
+    verbose: bool,
 
     /// fallback address passed to the specified protocol
     #[argh(positional, short = 'a')]
@@ -93,7 +89,7 @@ pub struct Command {
     proto: Vec<PathBuf>,
 
     #[argh(subcommand)]
-    pub nested: Option<SubCommand>,
+    pub nested: SubCommand,
 }
 
 impl Command {
@@ -113,14 +109,7 @@ impl Command {
     }
 
     pub fn get_nested(self) -> SubCommand {
-        self.nested.unwrap()
-    }
-
-    pub fn get_version(&self) -> (bool, &'static str) {
-        if self.version {
-            return (true, version());
-        }
-        (false, "")
+        self.nested
     }
 }
 
@@ -140,10 +129,20 @@ impl Opts {
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand)]
 pub enum SubCommand {
+    Version(Version),
     Take(Take),
     Record(Record),
     #[cfg(feature = "man")]
     Man(Man),
+}
+
+/// Returns CARGO_PKG_VERSION
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "version")]
+pub struct Version {
+    /// returns cargo package version, this is a temporary argh workaround
+    #[argh(switch)]
+    version: bool,
 }
 
 /// Takes a single frame, emitting the request then validating the returned response

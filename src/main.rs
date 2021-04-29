@@ -4,10 +4,6 @@ use std::io::{self, Write};
 
 fn main() -> Result<(), Error> {
     let args: Command = argh::from_env();
-    if let (true, v) = args.get_version() {
-        println!("{}", v);
-        return Ok(());
-    }
 
     let opts: Opts = Opts::new(&args);
     let base_params = args.base_params();
@@ -23,6 +19,10 @@ fn main() -> Result<(), Error> {
 
     match nested_arg {
         #[cfg(feature = "man")]
+        SubCommand::Version(_) => {
+            println!("{}", crate::version());
+            Ok(())
+        }
         SubCommand::Man(cmd) => {
             cmd.output_entry()?;
             Ok(())
