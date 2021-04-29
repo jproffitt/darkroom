@@ -50,15 +50,16 @@ const ENTRY_DOCSTRING: &str = r#"<entry>:
 
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "man")]
-#[argh(description = r#"<entry>:
-    readme
-    frame
-    cut
-    reel
-    hidden-variables
-    ignored-variables
-    merge-cuts
-    retry-attempts"#)]
+#[argh(note = r#"<entry>:
+readme
+frame
+cut
+reel
+hidden-variables
+ignored-variables
+merge-cuts
+retry-attempts"#)]
+/// return a given manual entry
 pub struct Man {
     /// the manual entry to specify
     #[argh(positional, default = "String::from(\"readme\")")]

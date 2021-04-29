@@ -42,6 +42,11 @@ impl log::Log for Logger {
 
 /// Darkroom: A contract testing tool built in Rust using the filmReel format.
 #[derive(FromArgs, PartialEq, Debug)]
+#[argh(
+    note = "Use `{command_name} man` for details on filmReel works.",
+    example = "Step through the httpbin test in [-i]nteractive mode:
+$ {command_name} -i record ./test_data post"
+)]
 pub struct Command {
     /// enable verbose output
     #[argh(switch, short = 'v')]
