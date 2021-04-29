@@ -41,7 +41,7 @@ chrono = "0.4.19"
 mdcat = { version = "0.22.4", optional = true }
 syntect = { version = "4.5.0", optional = true }
 pulldown-cmark = { version = "0.8.0", optional = true }
-minus = { version = "3.3.2", optional = true, features = ["static_output"] }
+minus = { version = "3.3.3", optional = true, features = ["static_output"] }
 
 [dev-dependencies]
 rstest = "0.8.0"

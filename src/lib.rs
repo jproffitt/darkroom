@@ -50,9 +50,10 @@ pub const fn version() -> &'static str {
 #[argh(
     note = "Use `{command_name} man` for details on filmReel, the JSON format.",
     example = "Step through the httpbin test in [-i]nteractive mode:
-$ {command_name} -i record ./test_data post",
+$ {command_name} -i record ./test_data post
+",
     example = "Echo the origin `${{IP}}` that gets written to the cut register from the httpbin.org POST request:
-dark --cut-out >(jq .IP) take ./test_data/post.01s.body.fr.json --cut ./test_data/post.cut.json"
+$ {command_name} --cut-out >(jq .IP) take ./test_data/post.01s.body.fr.json --cut ./test_data/post.cut.json"
 )]
 pub struct Command {
     /// enable verbose output

@@ -78,7 +78,7 @@ impl Man {
             "ree" => reel(),                   // "reel"
             "fra" => frame(),                  // "frame"
             "ret" | "att" => retry_attempts(), // "retry-attempts" | "attempts"
-            "mer" => merge_cuts(),             // "mer"
+            "mer" => merge_cuts(),             // "merge-cuts"
             "ign" => ignored_variables(),      // "ignored-variables" | "ignore" | "ignored"
             "hid" => hidden_variables(),       // "hidden-variables" | "hidden"
             _ => {
