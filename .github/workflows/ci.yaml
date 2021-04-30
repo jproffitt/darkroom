@@ -3,7 +3,8 @@ on:
   pull_request:
   push:
     branches:
-      - main
+      - master
+      - dev
 env:
   CARGO_TERM_COLOR: always
 jobs:
