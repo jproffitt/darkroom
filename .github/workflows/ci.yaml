@@ -19,6 +19,8 @@ jobs:
           override: true
           profile: minimal
           components: rustfmt
+      # from stable toolchain:
+      # cargo +nightly fmt --all 
       - run: cargo fmt --all -- --check
   test:
     name: test
