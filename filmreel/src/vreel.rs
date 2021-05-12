@@ -8,7 +8,6 @@ struct VirtualReel<'a> {
     // use BTtreeMap en lieu of HashMap to maintain order
     #[serde(borrow)]
     frames: BTreeMap<&'a str, VirtualFrame<'a>>,
-    #[serde(rename = "cut")]
     cut:    VirtualCut<'a>,
 }
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
@@ -62,8 +61,6 @@ mod tests {
 }
     "#;
 
-    const REGISTER_JSON: &str = r#"{ "KEY": "value" }"#;
-
     const SIMPLE_FRAME_JSON: &str = r#"
 {
   "protocol": "HTTP",
@@ -81,7 +78,7 @@ mod tests {
         VirtualReel {
             name:   "reel_name",
             frames: frames!({"1" => Frame::new(SIMPLE_FRAME_JSON).unwrap()}),
-            cut:    VirtualCut::Register(Register::from(REGISTER_JSON).unwrap()),
+            cut:    VirtualCut::Register(register!({"KEY" => "value})),
         },
         VREEL_JSON
     );
