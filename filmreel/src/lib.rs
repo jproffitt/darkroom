@@ -22,6 +22,7 @@ pub mod frame;
 pub mod reel;
 pub mod response;
 pub mod utils;
+pub mod vreel;
 
 #[cfg(test)]
 mod serde_tests;
