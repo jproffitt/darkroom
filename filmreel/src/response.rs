@@ -9,7 +9,10 @@ use serde_hashkey::{
     to_key_with_ordered_float as to_key, Error as HashError, Key, OrderedFloatPolicy as Hash,
 };
 use serde_json::{json, to_value, Map, Value};
-use std::collections::{BTreeMap, HashMap, HashSet};
+use std::{
+    borrow::Cow,
+    collections::{BTreeMap, HashMap, HashSet},
+};
 
 const INVALID_INSTRUCTION_TYPE_ERR: &str =
     "Frame write instruction did not correspond to a string object";
@@ -27,7 +30,7 @@ pub struct Response<'a> {
     //
     #[serde(flatten, skip_serializing_if = "Option::is_none")]
     pub etc:        Option<Value>, // https://github.com/serde-rs/serde/issues/1626
-    #[serde(borrow, skip_serializing)]
+    #[serde(skip_serializing)]
     pub validation: Option<Validation<'a>>,
     pub status:     u32,
 }
@@ -172,7 +175,7 @@ impl<'a> PartialEq for Response<'a> {
 
 impl<'a> Eq for Response<'a> {}
 
-type Validation<'a> = BTreeMap<&'a str, Validator>;
+type Validation<'a> = BTreeMap<Cow<'a, str>, Validator>;
 
 /// Validator represents one validation ruleset applied to a single JSON selection
 #[derive(Serialize, Clone, Deserialize, Default, Debug, PartialEq)]

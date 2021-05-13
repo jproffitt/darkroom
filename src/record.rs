@@ -5,11 +5,16 @@ use filmreel as fr;
 use fr::{cut::Register, frame::Frame, reel::*, ToStringHidden};
 use log::{debug, error, warn};
 use std::{
+    convert::TryFrom,
     fs,
     ops::Range,
     path::{Path, PathBuf},
     time::Instant,
 };
+
+pub struct RecordRunner {
+    pub frames: Box<dyn IntoIterator<Item = MetaFrame, IntoIter = Reel>>,
+}
 
 /// run_record runs through a Reel sequence using the darkroom::Record struct
 pub fn run_record(cmd: Record, mut base_params: BaseParams) -> Result<(), Error> {
@@ -60,8 +65,7 @@ pub fn run_record(cmd: Record, mut base_params: BaseParams) -> Result<(), Error>
         );
         warn!("{}", "=======================".green());
 
-        let frame_str = fr::file_to_string(&meta_frame.path)?;
-        let frame = Frame::new(&frame_str)?;
+        let frame = Frame::try_from(meta_frame.path)?;
         // Frame to be mutably borrowed
         let mut payload_frame = frame.clone();
 
@@ -189,7 +193,7 @@ fn parse_component(component: String) -> Result<(Reel, Register), Error> {
     }
     Ok((
         reel,
-        Register::from(fr::file_to_string(cut_path.to_str().unwrap())?).context(format!(
+        Register::from(fr::file_to_string(&cut_path)?).context(format!(
             "component Register::from failure => {:?}",
             cut_path
         ))?,

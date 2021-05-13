@@ -27,13 +27,17 @@ pub mod vreel;
 #[cfg(test)]
 mod serde_tests;
 
+pub use cut::Register;
 pub use error::FrError;
-pub use reel::Reel;
+pub use frame::Frame;
+pub use reel::{MetaFrame, Reel};
+pub use response::Response;
 use serde::Serialize;
-use std::{fs, path::Path};
+use std::{fs, io, path::Path};
+pub use vreel::VirtualReel;
 
 // Convenience in converting a Path to a String
-pub fn file_to_string<P>(path: P) -> std::io::Result<String>
+pub fn file_to_string<P>(path: P) -> io::Result<String>
 where
     P: AsRef<Path>,
 {
@@ -41,6 +45,16 @@ where
     let json_string: String = fs::read_to_string(path)?;
 
     Ok(json_string)
+}
+
+// Convenience in converting a Path to a BufReader
+pub fn file_to_reader<P>(path: P) -> io::Result<io::BufReader<fs::File>>
+where
+    P: AsRef<Path>,
+{
+    // https://github.com/serde-rs/json/issues/160
+    let file = fs::File::open(path)?;
+    Ok(io::BufReader::new(file))
 }
 
 pub trait ToStringHidden: ToStringPretty {

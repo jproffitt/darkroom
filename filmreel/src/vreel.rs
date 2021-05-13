@@ -3,10 +3,9 @@ use serde::{Deserialize, Serialize};
 use std::{collections::BTreeMap, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
-struct VirtualReel<'a> {
+pub struct VirtualReel<'a> {
     name:   &'a str,
     // use BTtreeMap en lieu of HashMap to maintain order
-    #[serde(borrow)]
     frames: BTreeMap<&'a str, VirtualFrame<'a>>,
     cut:    VirtualCut<'a>,
 }

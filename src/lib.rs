@@ -18,10 +18,7 @@ pub mod take;
 mod man;
 
 pub use filmreel::{
-    cut::Register,
-    frame::*,
-    reel::{MetaFrame, Reel},
-    FrError, ToStringHidden, ToStringPretty,
+    FrError, Frame, MetaFrame, Reel, Register, ToStringHidden, ToStringPretty, VirtualReel,
 };
 
 pub struct Logger;
@@ -170,7 +167,7 @@ pub struct Take {
     take_out: Option<PathBuf>,
 
     /// filepath of merge cuts
-    #[argh(positional, arg_name = "file")]
+    #[argh(positional)]
     merge_cuts: Vec<String>,
 }
 
@@ -179,7 +176,7 @@ pub struct Take {
 #[argh(subcommand, name = "record")]
 pub struct Record {
     /// directory path where frames and (if no explicit cut is provided) the cut are to be found
-    #[argh(positional, arg_name = "dir")]
+    #[argh(positional)]
     reel_path: PathBuf,
 
     /// name of the reel, used to find corresponding frames for the path provided
@@ -195,7 +192,7 @@ pub struct Record {
     component: Vec<String>,
 
     /// filepath of merge cuts
-    #[argh(positional, arg_name = "file")]
+    #[argh(positional)]
     merge_cuts: Vec<String>,
 
     /// output directory for successful takes
@@ -205,6 +202,31 @@ pub struct Record {
     /// the range (inclusive) of frames that a record session will use, colon separated: --range <start>:<end> --range <start>:
     #[argh(option, short = 'r')]
     range: Option<String>,
+
+    /// client request timeout in seconds, --timeout 0 disables request timeout [default: 30]
+    #[argh(option, short = 't', default = "30")]
+    timeout: u64,
+
+    /// print timestamp at take start, error return, and reel completion
+    #[argh(switch, short = 's')]
+    timestamp: bool,
+
+    /// print total time elapsed from record start to completion
+    #[argh(switch, short = 'd')]
+    duration: bool,
+}
+
+/// Attempts to play through an entire VirtualReel sequence running a take for every frame in the sequence
+#[derive(FromArgs, PartialEq, Debug)]
+#[argh(subcommand, name = "v-record")]
+pub struct VirtualRecord {
+    /// filepath or json string of VirtualReel
+    #[argh(positional)]
+    vreel: String,
+
+    /// output directory for successful takes
+    #[argh(option, short = 'o')]
+    take_out: Option<PathBuf>,
 
     /// client request timeout in seconds, --timeout 0 disables request timeout [default: 30]
     #[argh(option, short = 't', default = "30")]
@@ -302,6 +324,18 @@ impl Record {
     }
 }
 
+// impl VirtualRecord {
+//     pub fn init(&self) -> Result<(Register, Reel), Error> {
+//         let vreel: VirtualReel;
+//         if guess_json_obj(self.vreel) {
+//             vreel = serde_json::from_str(&self.vreel)?;
+//         } else {
+//             let vreel_str = filmreel::file_to_string(self.vreel)?;
+//             vreel = serde_json::from_str(&vreel_str)?;
+//         }
+//     }
+// }
+
 /// get_styler returns the custom syntax values for stdout json
 fn get_styler() -> Styler {
     Styler {
@@ -345,16 +379,12 @@ where
 }
 
 // try to see if a given string *might* be json
-pub fn guess_json_obj<T: AsRef<str>>(obj: T) -> bool {
-    let trimmed_obj = obj
+pub fn guess_json_obj<T: AsRef<str>>(input: T) -> bool {
+    let obj = input
         .as_ref()
         .chars()
         .filter(|c| !c.is_whitespace())
         .collect::<String>();
 
-    if trimmed_obj.starts_with("{\"") && trimmed_obj.contains("\":") && trimmed_obj.ends_with('}') {
-        return true;
-    }
-
-    false
+    obj.starts_with("{\"") && obj[2..].contains("\":") && obj.ends_with('}')
 }
