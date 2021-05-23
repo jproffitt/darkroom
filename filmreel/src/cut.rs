@@ -3,7 +3,7 @@ use lazy_static::lazy_static;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::HashMap, ops::Range};
+use std::{collections::HashMap, convert::TryFrom, ops::Range, path::PathBuf};
 
 /// Holds Cut Variables and their corresponding values stored in a series of
 /// key/value pairs.
@@ -275,6 +275,16 @@ impl Register {
         for k in remove.iter() {
             self.remove(&k);
         }
+    }
+}
+
+impl TryFrom<PathBuf> for Register {
+    type Error = FrError;
+
+    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
+        let buf = crate::file_to_reader(path).map_err(|e| FrError::File(e.to_string()))?;
+        let reg: Register = serde_json::from_reader(buf)?;
+        Ok(reg)
     }
 }
 

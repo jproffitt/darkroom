@@ -273,7 +273,7 @@ impl Take {
         if let Some(cut) = &self.cut {
             return Ok(cut.clone());
         }
-        let metaframe = filmreel::reel::MetaFrame::try_from(self.frame.clone())?;
+        let metaframe = filmreel::reel::MetaFrame::try_from(&self.frame)?;
         let dir = std::fs::canonicalize(&self.frame)?;
         Ok(metaframe.get_cut_file(dir.parent().unwrap()))
     }

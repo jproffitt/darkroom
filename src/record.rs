@@ -2,7 +2,7 @@ use crate::{params::BaseParams, take::*, Record};
 use anyhow::{anyhow, Context, Error};
 use colored::*;
 use filmreel as fr;
-use fr::{cut::Register, frame::Frame, reel::*, ToStringHidden};
+use fr::{Frame, MetaFrame, Reel, Register, ToStringHidden};
 use log::{debug, error, warn};
 use std::{
     convert::TryFrom,
@@ -16,13 +16,21 @@ pub struct RecordRunner {
     pub frames: Box<dyn IntoIterator<Item = MetaFrame, IntoIter = Reel>>,
 }
 
+pub fn stage_record(cmd: Record, mut base_params: BaseParams) -> Result<(), Error> {
+    let mut cut_register = Register::try_from(cmd.get_cut_file())?;
+    let frame_range = match cmd.range {
+        Some(r) => parse_range(r)?,
+        None => None,
+    };
+    let reel = Reel::new(&cmd.reel_path, &cmd.reel_name, frame_range)?;
+}
+
 /// run_record runs through a Reel sequence using the darkroom::Record struct
 pub fn run_record(cmd: Record, mut base_params: BaseParams) -> Result<(), Error> {
     base_params.timeout = cmd.timeout;
     base_params.timestamp = cmd.timestamp;
 
-    let cut_str = fr::file_to_string(cmd.get_cut_file())?;
-    let mut cut_register: Register = Register::from(&cut_str)?;
+    let mut cut_register = Register::try_from(cmd.get_cut_file())?;
     let frame_range = match cmd.range {
         Some(r) => parse_range(r)?,
         None => None,
@@ -193,7 +201,7 @@ fn parse_component(component: String) -> Result<(Reel, Register), Error> {
     }
     Ok((
         reel,
-        Register::from(fr::file_to_string(&cut_path)?).context(format!(
+        Register::try_from(cut_path).context(format!(
             "component Register::from failure => {:?}",
             cut_path
         ))?,
