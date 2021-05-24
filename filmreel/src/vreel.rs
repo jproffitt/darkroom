@@ -50,7 +50,8 @@ impl<'a> TryFrom<PathBuf> for VirtualReel<'a> {
     type Error = FrError;
 
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-        let buf = crate::file_to_reader(path).map_err(|e| FrError::File(e.to_string()))?;
+        let buf = crate::file_to_reader(&path)
+            .map_err(|e| FrError::File(path.to_string_lossy().to_string(), e.to_string()))?;
         let vreel = serde_json::from_reader(buf)?;
         Ok(vreel)
     }

@@ -3,7 +3,7 @@ use anyhow::{anyhow, Error};
 use argh::FromArgs;
 use colored_json::{prelude::*, Colour, Styler};
 use serde::Serialize;
-use std::{convert::TryFrom, path::PathBuf};
+use std::{convert::TryFrom, fs, path::PathBuf};
 
 #[cfg(feature = "man")]
 use crate::man::Man;
@@ -276,7 +276,7 @@ impl Take {
             return Ok(cut.clone());
         }
         let metaframe = filmreel::reel::MetaFrame::try_from(&self.frame)?;
-        let dir = std::fs::canonicalize(&self.frame)?;
+        let dir = fs::canonicalize(&self.frame)?;
         Ok(metaframe.get_cut_file(dir.parent().unwrap()))
     }
 }
@@ -335,12 +335,7 @@ impl VirtualRecord {
             let mut vreel_file = VirtualReel::try_from(vreel_path.clone())?;
             // default to parent directory of vreel file if path is not specified
             if vreel_file.path.is_none() {
-                let parent_dir = vreel_path
-                    .clone()
-                    .parent()
-                    .and_then(|p| p.parent())
-                    .unwrap()
-                    .to_path_buf();
+                let parent_dir = fs::canonicalize(vreel_path.parent().unwrap().to_path_buf())?;
                 vreel_file.path = Some(parent_dir);
             }
             vreel_file

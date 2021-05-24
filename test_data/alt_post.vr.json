@@ -1,6 +1,5 @@
 {
   "name": "post_vreel",
-  "path": "./test_data",
   "frames": {
     "1new_body": "post.01s.body.fr.json",
     "3new_no_content": "post.02s.no_content.fr.json",

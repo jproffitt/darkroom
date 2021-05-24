@@ -18,7 +18,7 @@ pub enum FrError {
     ReelParse(&'static str),
     Serde(String),
     Parse(String),
-    File(String),
+    File(String, String),
     Pest(PestError<Rule>),
 }
 
@@ -89,8 +89,8 @@ impl fmt::Display for FrError {
                 writeln!(f, "PestError {} {}", "-->".red(), msg)?;
                 Ok(())
             }
-            FrError::File(msg) => {
-                writeln!(f, "FileError {} {}", "-->".red(), msg)?;
+            FrError::File(msg, item) => {
+                errorf!(f, "FileError", msg, item);
                 Ok(())
             }
         }
