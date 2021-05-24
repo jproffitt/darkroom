@@ -10,8 +10,6 @@ use std::{
     borrow::Cow,
     collections::{HashMap, HashSet},
     convert::TryFrom,
-    fs::File,
-    io::BufReader,
     path::PathBuf,
 };
 

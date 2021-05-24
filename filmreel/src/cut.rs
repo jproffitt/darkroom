@@ -80,7 +80,7 @@ impl Register {
     }
 
     /// Merges foreign Cut registers into the caller, overriding any values in self with other
-    pub fn into_merge<I>(&mut self, others: I)
+    pub fn append_merge<I>(&mut self, others: I)
     where
         I: IntoIterator<Item = Register>,
     {
@@ -462,7 +462,7 @@ mod tests {
     )]
     fn test_destructive_merge(input_expected: (Vec<Register>, Register)) {
         let mut reg = register!({ "KEY"=> "VALUE" });
-        reg.into_merge(input_expected.0);
+        reg.append_merge(input_expected.0);
         reg.flush_ignored();
         assert_eq!(reg, input_expected.1);
     }

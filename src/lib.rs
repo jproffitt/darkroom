@@ -220,6 +220,9 @@ pub struct Record {
 /// Attempts to play through an entire VirtualReel sequence running a take for every frame in the sequence
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "v-record")]
+#[argh(example = "Run the post reel in a v-reel setup:
+$ dark v-record ./test_data/post.vr.json
+$ dark v-record ./test_data/alt_post.vr.json")]
 pub struct VirtualRecord {
     /// filepath or json string of VirtualReel
     #[argh(positional)]
@@ -328,7 +331,19 @@ impl VirtualRecord {
         let mut vreel = if guess_json_obj(&self.vreel) {
             serde_json::from_str(&self.vreel)?
         } else {
-            VirtualReel::try_from(PathBuf::from(&self.vreel))?
+            let vreel_path = PathBuf::from(&self.vreel);
+            let mut vreel_file = VirtualReel::try_from(vreel_path.clone())?;
+            // default to parent directory of vreel file if path is not specified
+            if vreel_file.path.is_none() {
+                let parent_dir = vreel_path
+                    .clone()
+                    .parent()
+                    .and_then(|p| p.parent())
+                    .unwrap()
+                    .to_path_buf();
+                vreel_file.path = Some(parent_dir);
+            }
+            vreel_file
         };
         vreel.join_path();
 
