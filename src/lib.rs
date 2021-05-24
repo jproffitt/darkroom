@@ -3,7 +3,7 @@ use anyhow::{anyhow, Error};
 use argh::FromArgs;
 use colored_json::{prelude::*, Colour, Styler};
 use serde::Serialize;
-use std::path::PathBuf;
+use std::{convert::TryFrom, path::PathBuf};
 
 #[cfg(feature = "man")]
 use crate::man::Man;
@@ -268,8 +268,6 @@ impl Take {
     /// Returns expected cut filename in the given directory with the reel name derived from
     /// the provided frame file
     pub fn get_cut_file(&self) -> Result<PathBuf, Error> {
-        use std::convert::TryFrom;
-
         if let Some(cut) = &self.cut {
             return Ok(cut.clone());
         }
@@ -324,17 +322,15 @@ impl Record {
     }
 }
 
-// impl VirtualRecord {
-//     pub fn init(&self) -> Result<(Register, Reel), Error> {
-//         let vreel: VirtualReel;
-//         if guess_json_obj(self.vreel) {
-//             vreel = serde_json::from_str(&self.vreel)?;
-//         } else {
-//             let vreel_str = filmreel::file_to_string(self.vreel)?;
-//             vreel = serde_json::from_str(&vreel_str)?;
-//         }
-//     }
-// }
+impl VirtualRecord {
+    pub fn init(&self) -> Result<VirtualReel, Error> {
+        if guess_json_obj(&self.vreel) {
+            return Ok(serde_json::from_str(&self.vreel)?);
+        }
+
+        Ok(VirtualReel::try_from(PathBuf::from(&self.vreel))?)
+    }
+}
 
 /// get_styler returns the custom syntax values for stdout json
 fn get_styler() -> Styler {

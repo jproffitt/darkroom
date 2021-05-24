@@ -1,5 +1,5 @@
 use anyhow::Error;
-use darkroom::{record::run_record, take::take_cmd, *};
+use darkroom::{record::cmd_record, take::cmd_take, *};
 use std::io::{self, Write};
 
 fn main() -> Result<(), Error> {
@@ -29,12 +29,12 @@ fn main() -> Result<(), Error> {
         }
         SubCommand::Take(cmd) => {
             cmd.validate()?;
-            take_cmd(cmd, base_params)?;
+            cmd_take(cmd, base_params)?;
             Ok(())
         }
         SubCommand::Record(cmd) => {
             cmd.validate()?;
-            match run_record(cmd, base_params.clone()) {
+            match cmd_record(cmd, base_params.clone()) {
                 Err(e) => {
                     if base_params.timestamp {
                         write!(io::stderr(), "[{}] ", chrono::Utc::now())

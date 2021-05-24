@@ -79,15 +79,33 @@ impl Register {
         self.vars.contains_key(key)
     }
 
-    /// Merges a foreign Cut register into the caller, overriding any values in self with other
-    pub fn destructive_merge<I>(&mut self, others: I)
+    /// Merges foreign Cut registers into the caller, overriding any values in self with other
+    pub fn into_merge<I>(&mut self, others: I)
     where
         I: IntoIterator<Item = Register>,
     {
         for other in others.into_iter() {
-            for (k, v) in other.iter() {
-                self.insert(k.to_string(), v.clone());
-            }
+            self.single_merge(other);
+        }
+    }
+
+    /// Merges an iterable collection of registers together, left to right
+    pub fn iter_merge<I>(registers: I) -> Register
+    where
+        I: IntoIterator<Item = Register>,
+    {
+        let mut output = Register::new();
+        for reg in registers.into_iter() {
+            output.single_merge(reg);
+        }
+
+        output
+    }
+
+    /// Merges a single Cut register into the caller, overriding any values in self with other
+    pub fn single_merge(&mut self, other: Self) {
+        for (k, v) in other.iter() {
+            self.insert(k.to_string(), v.clone());
         }
     }
 
@@ -283,11 +301,23 @@ impl TryFrom<PathBuf> for Register {
 
     fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
         let buf = crate::file_to_reader(path).map_err(|e| FrError::File(e.to_string()))?;
-        let reg: Register = serde_json::from_reader(buf)?;
-        Ok(reg)
+        let register = serde_json::from_reader(buf)?;
+        Ok(register)
     }
 }
 
+impl TryFrom<Vec<PathBuf>> for Register {
+    type Error = FrError;
+
+    fn try_from(paths: Vec<PathBuf>) -> Result<Self, Self::Error> {
+        let regs = paths
+            .into_iter()
+            .map(Self::try_from)
+            .collect::<Result<Vec<Register>, _>>()?;
+
+        Ok(Self::iter_merge(regs))
+    }
+}
 /// Describes the types of matches during a read operation.
 #[derive(Debug)]
 pub enum Match<'a> {
@@ -432,7 +462,7 @@ mod tests {
     )]
     fn test_destructive_merge(input_expected: (Vec<Register>, Register)) {
         let mut reg = register!({ "KEY"=> "VALUE" });
-        reg.destructive_merge(input_expected.0);
+        reg.into_merge(input_expected.0);
         reg.flush_ignored();
         assert_eq!(reg, input_expected.1);
     }
