@@ -243,7 +243,7 @@ pub fn cmd_take(cmd: Take, base_params: BaseParams) -> Result<(), Error> {
         &mut payload_frame,
         &mut cut_register,
         &base_params,
-        cmd.take_out.clone(),
+        cmd.take_out,
     ) {
         write_cut(
             &base_params.cut_out,

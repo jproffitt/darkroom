@@ -194,10 +194,8 @@ impl Validator {
         self_body: &mut Value,
         other_body: &mut Value,
     ) -> Result<(), FrError> {
-        let selection = selector(self_body).ok_or(FrError::ReadInstructionf(
-            MISSING_SELECTION_ERR,
-            query.to_string(),
-        ))?;
+        let selection = selector(self_body)
+            .ok_or_else(|| FrError::ReadInstructionf(MISSING_SELECTION_ERR, query.to_string()))?;
         match selection {
             Value::Object(o) => {
                 let preserve_keys = o.keys().collect::<Vec<&String>>();
@@ -208,27 +206,12 @@ impl Validator {
                     _ => return Ok(()),
                 };
 
-                let mut has_mutual_keys = false;
-
-                let other_keys: Vec<String> = other_selection
-                    .keys()
-                    .filter(|k| {
-                        let contains = preserve_keys.contains(k);
-
-                        if contains {
-                            has_mutual_keys = true;
-                        }
-                        !contains
-                    }) // retain keys that are not found in preserve_keys
+                for k in other_selection
+                    .keys() // retain keys that are not found in preserve_keys
+                    .filter(|k| !preserve_keys.contains(&k))
                     .cloned()
-                    .collect();
-
-                // if there are no mutual keys at all, then do not mutate other_selection
-                if !has_mutual_keys {
-                    return Ok(());
-                }
-
-                for k in other_keys.into_iter() {
+                    .collect::<Vec<String>>()
+                {
                     other_selection.remove(&k);
                 }
             }
@@ -285,10 +268,8 @@ impl Validator {
         self_body: &mut Value,
         other_body: &mut Value,
     ) -> Result<(), FrError> {
-        let selection = selector(self_body).ok_or(FrError::ReadInstructionf(
-            MISSING_SELECTION_ERR,
-            query.to_string(),
-        ))?;
+        let selection = selector(self_body)
+            .ok_or_else(|| FrError::ReadInstructionf(MISSING_SELECTION_ERR, query.to_string()))?;
         match selection {
             Value::Object(_) => Ok(()),
             Value::Array(self_selection) => {

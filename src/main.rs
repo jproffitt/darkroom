@@ -41,10 +41,8 @@ fn main() -> Result<(), Error> {
         }
         SubCommand::Record(cmd) => {
             cmd.validate()?;
-            cmd_record(cmd, base_params.clone()).map_err(|e| err_ts(e))
+            cmd_record(cmd, base_params.clone()).map_err(err_ts)
         }
-        SubCommand::VirtualRecord(cmd) => {
-            cmd_vrecord(cmd, base_params.clone()).map_err(|e| err_ts(e))
-        }
+        SubCommand::VirtualRecord(cmd) => cmd_vrecord(cmd, base_params.clone()).map_err(err_ts),
     }
 }

@@ -95,14 +95,15 @@ pub fn cmd_vrecord(cmd: VirtualRecord, mut base_params: BaseParams) -> Result<()
 
 /// run_record runs through a Reel sequence using the darkroom::Record or darkroom::VirtualRecord structs
 pub fn run_record(mut runner: RecordRunner, base_params: BaseParams) -> Result<(), Error> {
-    let duration = runner.duration.then(|| Instant::now());
+    let start = Instant::now();
+    let duration = runner.duration;
     let get_duration = || {
-        duration.map(|now| {
+        if duration {
             warn!(
                 "[Total record duration: {:.3}sec]",
-                now.elapsed().as_secs_f32(),
+                start.elapsed().as_secs_f32(),
             );
-        })
+        }
     };
 
     for meta_frame in runner.frames.into_iter() {
@@ -172,7 +173,7 @@ pub fn read_into(base_register: &mut Register, merge_cuts: Vec<String>) -> Resul
             fr::file_to_string(&c).map_err(|e| anyhow!("{} - {}", c, e))
         })
         .scan(&mut err, filmreel::until_err)
-        .map(|c| Register::from(c))
+        .map(Register::from)
         .collect::<Result<Vec<Register>, _>>()?;
     // TODO tidy up scan calling only on file_to_string errors
     err?;
