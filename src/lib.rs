@@ -131,6 +131,7 @@ pub enum SubCommand {
     Record(Record),
     #[cfg(feature = "man")]
     Man(Man),
+    VirtualRecord(VirtualRecord),
 }
 
 /// Returns CARGO_PKG_VERSION
@@ -324,11 +325,14 @@ impl Record {
 
 impl VirtualRecord {
     pub fn init(&self) -> Result<VirtualReel, Error> {
-        if guess_json_obj(&self.vreel) {
-            return Ok(serde_json::from_str(&self.vreel)?);
-        }
+        let mut vreel = if guess_json_obj(&self.vreel) {
+            serde_json::from_str(&self.vreel)?
+        } else {
+            VirtualReel::try_from(PathBuf::from(&self.vreel))?
+        };
+        vreel.join_path();
 
-        Ok(VirtualReel::try_from(PathBuf::from(&self.vreel))?)
+        Ok(vreel)
     }
 }
 

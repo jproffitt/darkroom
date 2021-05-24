@@ -75,7 +75,7 @@ pub fn cmd_vrecord(cmd: VirtualRecord, mut base_params: BaseParams) -> Result<()
             .iter()
             .map(|(k, v)| -> Result<MetaFrame, Error> {
                 let mut frame = MetaFrame::try_from(v)?;
-                frame.name = k.to_string();
+                frame.alt_name = Some(k.to_string());
                 Ok(frame)
             })
             .collect::<Result<Vec<MetaFrame>, _>>()?,
@@ -111,12 +111,12 @@ pub fn run_record(mut runner: RecordRunner, base_params: BaseParams) -> Result<(
             .take_out
             .as_ref()
             .map(|dir| take_output(&dir, &&meta_frame.path));
-        warn!(
-            "{}{} {:?}",
-            base_params.fmt_timestamp(),
-            "File:".yellow(),
-            meta_frame.get_filename()
-        );
+
+        let mut info_str = format!("{} {:?}", "File:".yellow(), meta_frame.get_filename());
+        if let Some(alt_name) = meta_frame.alt_name {
+            info_str = format!("{:45} | {} {}", info_str, "Name:".yellow(), alt_name);
+        }
+        warn!("{}{}", base_params.fmt_timestamp(), info_str,);
         warn!("{}", "=======================".green());
 
         let frame = Frame::try_from(meta_frame.path)?;

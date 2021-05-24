@@ -1,0 +1,10 @@
+{
+  "name": "post_vreel",
+  "path": "./test_data",
+  "frames": {
+    "new_body": "post.01s.body.fr.json",
+    "new_no_content": "post.02s.no_content.fr.json",
+    "new_delay": "post.03s.delay.fr.json"
+  },
+  "cut": "post.cut.json"
+}

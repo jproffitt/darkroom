@@ -147,6 +147,7 @@ impl IntoIterator for Reel {
 pub struct MetaFrame {
     pub reel_name:  String,
     pub frame_type: FrameType,
+    pub alt_name:   Option<String>,
     pub name:       String,
     pub path:       PathBuf,
     pub step_f32:   f32,
@@ -179,6 +180,7 @@ impl TryFrom<&PathBuf> for MetaFrame {
 
         Ok(Self {
             path: p.clone(),
+            alt_name: None,
             name: name.to_string(),
             reel_name,
             step_f32: seq,
@@ -299,6 +301,7 @@ mod tests {
             MetaFrame {
                 frame_type: FrameType::Success,
                 name:       "frame_name".to_string(),
+                alt_name:   None,
                 path:       PathBuf::from("./reel_name.01s.frame_name.fr.json"),
                 reel_name:  "reel_name".to_string(),
                 step:       "01s".to_string(),

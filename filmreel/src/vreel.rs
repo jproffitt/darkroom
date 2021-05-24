@@ -1,14 +1,61 @@
-use crate::{cut::Register, error::FrError, frame::Frame};
+use crate::{cut::Register, error::FrError};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::BTreeMap, convert::TryFrom, path::PathBuf};
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct VirtualReel<'a> {
     pub name:   Cow<'a, str>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub path:   Option<PathBuf>,
     // use BTtreeMap en lieu of HashMap to maintain order
     pub frames: VirtualFrames<'a>,
     pub cut:    VirtualCut,
 }
+
+impl<'a> VirtualReel<'a> {
+    /// join path prepends the "path" key to any PathBuf values in "frames" and "cut"
+    pub fn join_path(&mut self) {
+        if self.path.is_none() {
+            return;
+        }
+
+        let reel_path = self.path.clone().unwrap();
+
+        match &mut self.frames {
+            VirtualFrames::RenamedList(ref mut map) => {
+                for (_, v) in map.iter_mut() {
+                    *v = reel_path.join(v.clone());
+                }
+            }
+            VirtualFrames::List(list) => {
+                for v in list.iter_mut() {
+                    *v = reel_path.join(v.clone());
+                }
+            }
+        }
+
+        match &mut self.cut {
+            VirtualCut::MergeCuts(ref mut list) => {
+                for v in list.iter_mut() {
+                    *v = reel_path.join(v.clone());
+                }
+            }
+            VirtualCut::Cut(ref mut path) => *path = reel_path.join(path.clone()),
+            VirtualCut::Register(_) => (),
+        }
+    }
+}
+
+impl<'a> TryFrom<PathBuf> for VirtualReel<'a> {
+    type Error = FrError;
+
+    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
+        let buf = crate::file_to_reader(path).map_err(|e| FrError::File(e.to_string()))?;
+        let vreel = serde_json::from_reader(buf)?;
+        Ok(vreel)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(untagged)]
 pub enum VirtualCut {
@@ -42,27 +89,8 @@ pub enum VirtualFrames<'a> {
     List(Vec<PathBuf>),
 }
 
-impl<'a> TryFrom<PathBuf> for VirtualReel<'a> {
-    type Error = FrError;
-
-    fn try_from(path: PathBuf) -> Result<Self, Self::Error> {
-        let buf = crate::file_to_reader(path).map_err(|e| FrError::File(e.to_string()))?;
-        let vreel = serde_json::from_reader(buf)?;
-        Ok(vreel)
-    }
-}
-//     () => (
-//         $crate::__rust_force_expr!($crate::vec::Vec::new())
-//     );
-//     ($elem:expr; $n:expr) => (
-//         $crate::__rust_force_expr!($crate::vec::from_elem($elem, $n))
-//     );
-//     ($($x:expr),+ $(,)?) => (
-//         $crate::__rust_force_expr!(<[_]>::into_vec(box [$($x),+]))
-//     );
-
 #[macro_export]
-macro_rules! frames {
+macro_rules! vframes {
     ([$val: expr]) => (
         use ::std::path::PathBuf;
         VirtualFrames::List(vec![PathBuf::from($val)])
@@ -102,7 +130,8 @@ mod tests {
         vframe,
         VirtualReel {
             name:   "reel_name".into(),
-            frames: frames!(["frame1.fr.json", "frame2.fr.json"]),
+            path:   None,
+            frames: vframes!(["frame1.fr.json", "frame2.fr.json"]),
             cut:    VirtualCut::Register(register!({"KEY" => "value"})),
         },
         VREEL_JSON
@@ -111,6 +140,7 @@ mod tests {
     const PATH_VREEL_JSON: &str = r#"
 {
   "name": "reel_name",
+  "path": "./reel_dir",
   "frames": {
     "1": "other_reel.01s.name.fr.json"
   },
@@ -122,7 +152,8 @@ mod tests {
         pathbuf_vframe,
         VirtualReel {
             name:   "reel_name".into(),
-            frames: frames!({"1" => PathBuf::from("other_reel.01s.name.fr.json")}),
+            path:   Some("./reel_dir".into()),
+            frames: vframes!({"1" => PathBuf::from("other_reel.01s.name.fr.json")}),
             cut:    VirtualCut::MergeCuts(vec!["other_reel.cut.json".into()]),
         },
         PATH_VREEL_JSON
