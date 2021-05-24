@@ -106,21 +106,21 @@ pub fn run_record(mut runner: RecordRunner, base_params: BaseParams) -> Result<(
         }
     };
 
-    for meta_frame in runner.frames.into_iter() {
+    for metaframe in runner.frames.into_iter() {
         // if cmd.output is Some, provide a take PathBuf
         let output = runner
             .take_out
             .as_ref()
-            .map(|dir| take_output(&dir, &&meta_frame.path));
+            .map(|dir| take_output(&dir, &&metaframe.path));
 
-        let mut info_str = format!("{} {:?}", "File:".yellow(), meta_frame.get_filename());
-        if let Some(alt_name) = meta_frame.alt_name {
+        let mut info_str = format!("{} {:?}", "File:".yellow(), metaframe.get_filename());
+        if let Some(alt_name) = metaframe.alt_name {
             info_str = format!("{:45} | {} {}", info_str, "Name:".yellow(), alt_name);
         }
         warn!("{}{}", base_params.fmt_timestamp(), info_str,);
         warn!("{}", "=======================".green());
 
-        let frame = Frame::try_from(meta_frame.path)?;
+        let frame = Frame::try_from(metaframe.path)?;
         // Frame to be mutably borrowed
         let mut payload_frame = frame.clone();
 

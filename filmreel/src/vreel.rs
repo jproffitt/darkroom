@@ -1,4 +1,4 @@
-use crate::{cut::Register, error::FrError};
+use crate::{FrError, Frame, Register};
 use serde::{Deserialize, Serialize};
 use std::{borrow::Cow, collections::BTreeMap, convert::TryFrom, path::PathBuf};
 
@@ -32,6 +32,7 @@ impl<'a> VirtualReel<'a> {
                     *v = reel_path.join(v.clone());
                 }
             }
+            VirtualFrames::Frames(_) => (),
         }
 
         match &mut self.cut {
@@ -87,6 +88,7 @@ pub enum VirtualCut {
 pub enum VirtualFrames<'a> {
     RenamedList(BTreeMap<Cow<'a, str>, PathBuf>),
     List(Vec<PathBuf>),
+    Frames(BTreeMap<Cow<'a, str>, Frame<'a>>),
 }
 
 #[macro_export]
@@ -103,12 +105,27 @@ macro_rules! vframes {
         VirtualFrames::List(vec)
     });
     ({$( $key: expr => $val: expr ),*}) => {{
-        use ::std::collections::BTreeMap;
-        use ::std::path::PathBuf;
+        use crate::frame::Frame;
+        use crate::vreel::VirtualFrames;
+        use ::std::{borrow::Cow, collections::BTreeMap, path::PathBuf};
 
+        trait AsFrame<'a> {
+            fn as_frame(self) -> VirtualFrames<'a>;
+        }
+
+        impl<'a> AsFrame<'a> for BTreeMap<Cow<'a, str>, Frame<'a>> {
+            fn as_frame(self) -> VirtualFrames<'a> {
+                VirtualFrames::Frames(self)
+            }
+        }
+        impl<'a> AsFrame<'a> for BTreeMap<Cow<'a, str>, PathBuf> {
+            fn as_frame(self) -> VirtualFrames<'a> {
+                VirtualFrames::RenamedList(self)
+            }
+        }
         let mut map =  BTreeMap::new();
         $(map.insert($key.into(), $val);)*
-            VirtualFrames::RenamedList(map)
+            map.as_frame()
     }}
 }
 
@@ -156,5 +173,44 @@ mod tests {
             cut:    VirtualCut::MergeCuts(vec!["other_reel.cut.json".into()]),
         },
         PATH_VREEL_JSON
+    );
+    const OBJ_FRAME_VREEL_JSON: &str = r#"
+{
+  "name": "reel_name",
+  "frames": {
+    "other_reel.01s.name.fr.json": {
+      "protocol": "HTTP",
+      "request": {
+        "uri": "POST /logout/${USER_ID}"
+      },
+      "response": {
+        "status": 200
+      }
+    }
+  },
+  "cut": ["other_reel.cut.json"]
+}
+    "#;
+
+    const SIMPLE_FRAME_JSON: &str = r#"
+{
+  "protocol": "HTTP",
+  "request": {
+    "uri": "POST /logout/${USER_ID}"
+  },
+  "response": {
+    "status": 200
+  }
+}
+    "#;
+    test_ser_de!(
+        obj_vframe,
+        VirtualReel {
+            name:   "reel_name".into(),
+            path:   None,
+            frames: vframes!({"other_reel.01s.name.fr.json" => Frame::new(SIMPLE_FRAME_JSON).unwrap()}),
+            cut:    VirtualCut::MergeCuts(vec!["other_reel.cut.json".into()]),
+        },
+        OBJ_FRAME_VREEL_JSON
     );
 }
