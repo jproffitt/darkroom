@@ -100,7 +100,6 @@ macro_rules! vframes {
         use ::std::path::PathBuf;
 
         let mut vec = Vec::new();
-        // vec.insert(PathBuf::from($val));
         $(vec.push(PathBuf::from($val));)*
         VirtualFrames::List(vec)
     });
