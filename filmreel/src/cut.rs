@@ -79,8 +79,14 @@ impl Register {
         self.vars.contains_key(key)
     }
 
-    /// Merges foreign Cut registers into the caller, overriding any values in self with other
-    pub fn append_merge<I>(&mut self, others: I)
+    /// Merges foreign [`Register`] structs into the caller,
+    /// overriding any values in `self` with `others`
+    ///
+    /// 1. if the primary key of an incoming record matches with the key of an existing record:
+    /// update the matching target record.
+    /// 2. if the incoming key does not exist in any existing record:
+    /// add the incoming record to the target.
+    pub fn destructive_merge<I>(&mut self, others: I)
     where
         I: IntoIterator<Item = Register>,
     {
@@ -463,7 +469,7 @@ mod tests {
     )]
     fn test_destructive_merge(input_expected: (Vec<Register>, Register)) {
         let mut reg = register!({ "KEY"=> "VALUE" });
-        reg.append_merge(input_expected.0);
+        reg.destructive_merge(input_expected.0);
         reg.flush_ignored();
         assert_eq!(reg, input_expected.1);
     }

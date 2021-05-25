@@ -171,8 +171,8 @@ pub enum Protocol {
     HTTP,
 }
 
-/// Contains read and write instructions for the [Cut Register](::Cut::Register),
-/// `InstructionSet` should be immutable once initialized.
+/// Contains read and write instructions for the [`crate::Register`],
+/// [`InstructionSet`] should be immutable once initialized.
 ///
 /// [Cut Instruction Set](https://github.com/Bestowinc/filmReel/blob/master/frame.md#cut-instruction-set)
 #[derive(Serialize, Clone, Deserialize, Default, Debug, PartialEq)]

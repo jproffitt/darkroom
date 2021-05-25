@@ -178,7 +178,7 @@ pub fn read_into(base_register: &mut Register, merge_cuts: Vec<String>) -> Resul
     // TODO tidy up scan calling only on file_to_string errors
     err?;
 
-    base_register.append_merge(merge_registers);
+    base_register.destructive_merge(merge_registers);
 
     Ok(())
 }

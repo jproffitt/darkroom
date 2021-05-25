@@ -19,7 +19,6 @@ const INVALID_INSTRUCTION_TYPE_ERR: &str =
 
 const MISSING_SELECTION_ERR: &str = "selection missing from Frame body";
 
-///
 /// Encapsulates the expected response payload.
 ///
 /// [Request Object](https://github.com/Bestowinc/filmReel/blob/master/frame.md#request)
@@ -36,8 +35,8 @@ pub struct Response<'a> {
 }
 
 impl<'a> Response<'a> {
-    /// Cast to a serialized Frame as serde_json::Value object for consistency in jql object
-    /// traversal: `"response"."body"` should always traverse a serialized Frame struct
+    /// Cast to a serialized Frame as [`serde_json::Value`] object for consistency in jql object
+    /// traversal: `"response"."body"` should always traverse a serialized [`Frame`] struct
     fn to_frame_value(&self) -> Result<Value, FrError> {
         Ok(json!({"response":to_value(self)?}))
     }
@@ -139,8 +138,8 @@ impl<'a> Response<'a> {
 // For now selector queries are only used on the reponse body
 // selector logic takes the body Value object while mainting a valid
 // "whole file" query for reference's sake
-// "'response'.'body'" => "."
-// "'response'.'body'.'key'" => ".'key'"
+// `"'response'.'body'" => "."`
+// `"'response'.'body'.'key'" => ".'key'"`
 fn strip_query(query: &str) -> &str {
     let body_query = query
         .trim_start_matches('.')
@@ -163,10 +162,10 @@ impl Default for Response<'_> {
     }
 }
 
-/// PartialEq needs to exlcude self.validation to ensure that [Response::aply_validation] can
+/// PartialEq needs to exlcude [`Response.validation`] to ensure that [`Response::apply_validation`] can
 /// diffentiatiate between the parent `Response` (the one pulled directle from the filmReel file)
-/// and the child `Response` (one deserialized from returned data) since the client validations
-/// should always be `None`
+/// and the child [`Response`] (one deserialized from returned data) since the client validations
+/// should always be[`Option::None`]
 impl<'a> PartialEq for Response<'a> {
     fn eq(&self, other: &Self) -> bool {
         self.body.eq(&other.body) && self.etc.eq(&other.etc) && self.status.eq(&other.status)
@@ -186,7 +185,6 @@ pub struct Validator {
 }
 
 impl Validator {
-    // partial validation?
     fn apply_partial(
         &self,
         query: &str,

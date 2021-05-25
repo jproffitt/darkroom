@@ -96,7 +96,7 @@ impl fmt::Display for FrError {
     }
 }
 
-/// returns a FrError::File with the filepath as context
+/// adds the given filepath as context for [`FrError::File`]
 pub trait WithPath<T, P> {
     fn with_path(self, path: P) -> Result<T, FrError>;
 }
