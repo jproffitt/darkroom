@@ -19,7 +19,7 @@ A contract testing tool built in Rust using the [filmReel format](https://github
 
 <!-- dark start -->
 ```
-Usage: dark [<address>] [-v] [-H <header>] [--cut-out <file>] [-i] [--tls] [--proto-dir <dir...>] [-p <proto...>] <command> [<args>]
+Usage: dark [<address>] [-v] [-H <header>] [--cut-out <file>] [-i] [--tls] [--proto-dir <dir...>] [-p <file...>] <command> [<args>]
 
 Darkroom: A contract testing tool built in Rust using the filmReel format.
 
@@ -41,6 +41,8 @@ Commands:
   record            Attempts to play through an entire Reel sequence running a
                     take for every frame in the sequence
   man               return a given manual entry
+  vrecord           Attempts to play through an entire VirtualReel sequence
+                    running a take for every frame in the sequence
 
 Examples:
   Step through the httpbin test in [-i]nteractive mode:

@@ -72,7 +72,7 @@ impl Register {
         self.vars.iter()
     }
 
-    /// Returns a boolean indicating whether Register.vars contains a given key.
+    /// Returns a boolean indicating whether [`Register.vars`] contains a given key.
     ///
     /// [Cut Variable](https://github.com/Bestowinc/filmReel/blob/master/cut.md#cut-variable)
     pub fn contains_key(&self, key: &str) -> bool {
@@ -80,12 +80,12 @@ impl Register {
     }
 
     /// Merges foreign [`Register`] structs into the caller,
-    /// overriding any values in `self` with `others`
+    /// overriding any values in `self` with the current `others.next()` item.
     ///
     /// 1. if the primary key of an incoming record matches with the key of an existing record:
-    /// update the matching target record.
+    ///     - update the matching target record.
     /// 2. if the incoming key does not exist in any existing record:
-    /// add the incoming record to the target.
+    ///     - add the incoming record to the target.
     pub fn destructive_merge<I>(&mut self, others: I)
     where
         I: IntoIterator<Item = Register>,
@@ -108,7 +108,7 @@ impl Register {
         output
     }
 
-    /// Merges a single Cut register into the caller, overriding any values in self with other
+    /// Merges a single [`Register`] into the caller, overriding any values in `self` with `other`
     pub fn single_merge(&mut self, other: Self) {
         for (k, v) in other.iter() {
             self.insert(k.to_string(), v.clone());
@@ -216,7 +216,7 @@ impl Register {
         Ok(())
     }
 
-    /// Takes a frame string value and compares it against a payload string value
+    /// Takes a [`crate::Frame`] string value and compares it against a payload string value
     /// returning any declared cut variables found
     pub fn write_match(
         var_name: &str,
@@ -272,7 +272,7 @@ impl Register {
 
     /// Inserts a Value entry into the Register's Cut Variables
     ///
-    /// Returns an Err if the key value is does not consist solely of characters, dashes, and underscores.
+    /// Returns an [`Err`] if the key value is does not consist solely of characters, dashes, and underscores.
     pub fn write_operation(&mut self, key: &str, val: Value) -> Result<Option<Value>, FrError> {
         lazy_static! {
             // Permit only alphachars dashes and underscores for variable names
