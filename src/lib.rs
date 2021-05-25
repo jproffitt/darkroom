@@ -175,6 +175,13 @@ pub struct Take {
 /// Attempts to play through an entire Reel sequence running a take for every frame in the sequence
 #[derive(FromArgs, PartialEq, Debug)]
 #[argh(subcommand, name = "record")]
+#[argh(
+    example = "Step through the httpbin test in [-i]nteractive mode:
+$ dark -i record ./test_data post
+",
+    example = "Echo the origin `${{IP}}` that gets written to the cut register from the httpbin.org POST request:
+$ dark --cut-out >(jq .IP) record ./test_data post"
+)]
 pub struct Record {
     /// directory path where frames and (if no explicit cut is provided) the cut are to be found
     #[argh(positional)]
@@ -219,10 +226,10 @@ pub struct Record {
 
 /// Attempts to play through an entire VirtualReel sequence running a take for every frame in the sequence
 #[derive(FromArgs, PartialEq, Debug)]
-#[argh(subcommand, name = "v-record")]
+#[argh(subcommand, name = "vrecord")]
 #[argh(example = "Run the post reel in a v-reel setup:
-$ dark v-record ./test_data/post.vr.json
-$ dark v-record ./test_data/alt_post.vr.json")]
+$ {command_name} ./test_data/post.vr.json
+$ {command_name} ./test_data/alt_post.vr.json")]
 pub struct VirtualRecord {
     /// filepath or json string of VirtualReel
     #[argh(positional)]

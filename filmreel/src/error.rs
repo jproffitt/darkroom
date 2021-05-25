@@ -103,7 +103,7 @@ pub trait WithPath<T, P> {
 
 impl<T, E, P> WithPath<T, P> for Result<T, E>
 where
-    E: std::fmt::Display,
+    E: Error,
     P: AsRef<Path>,
 {
     fn with_path(self, path: P) -> Result<T, FrError> {
