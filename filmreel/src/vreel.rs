@@ -67,7 +67,7 @@ pub enum VirtualCut {
 
 /// VirtualFrames represents the frames variant containing a list of frames that can be renamed
 ///
-/// VirtualFrames::ReanamedList variant will replace the frame name with the key value when running the
+/// VirtualFrames::RenamedList variant will replace the frame name with the key value when running the
 /// VirtualReel (ordering reel flow by the new key name):
 ///
 ///  ```json
