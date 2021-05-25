@@ -52,9 +52,9 @@ jobs:
       - name: httpbin post
         run: cargo run -- record ./test_data post
       - name: httpbin vrecord
-        run: cargo run -- v-record ./test_data/post.vr.json
+        run: cargo run -- vrecord ./test_data/post.vr.json
       - name: httpbin vrecord alt
-        run: cargo run -- v-record ./test_data/alt_post.vr.json
+        run: cargo run -- vrecord ./test_data/alt_post.vr.json
   lint:
     name: lint
     runs-on: ubuntu-latest
