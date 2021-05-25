@@ -13,7 +13,7 @@ pub struct VirtualReel<'a> {
 }
 
 impl<'a> VirtualReel<'a> {
-    /// join path prepends the "path" key to any PathBuf values in "frames" and "cut"
+    /// Prepends the "path" key to any PathBuf values in "frames" and "cut"
     pub fn join_path(&mut self) {
         if self.path.is_none() {
             return;
