@@ -28,7 +28,7 @@ pub mod vreel;
 mod serde_tests;
 
 pub use cut::Register;
-pub use error::FrError;
+pub use error::{FrError, WithPath};
 pub use frame::Frame;
 pub use reel::{MetaFrame, Reel};
 pub use response::Response;
@@ -48,12 +48,12 @@ where
 }
 
 // Convenience in converting a Path to a BufReader
-pub fn file_to_reader<P>(path: P) -> io::Result<io::BufReader<fs::File>>
+pub fn file_to_reader<P>(path: P) -> Result<io::BufReader<fs::File>, FrError>
 where
     P: AsRef<Path>,
 {
     // https://github.com/serde-rs/json/issues/160
-    let file = fs::File::open(path)?;
+    let file = fs::File::open(&path).with_path(&path)?;
     Ok(io::BufReader::new(file))
 }
 

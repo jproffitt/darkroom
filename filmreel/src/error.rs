@@ -3,7 +3,7 @@ use colored::*;
 use pest::error::Error as PestError;
 use serde_hashkey::Error as HashKeyError;
 use serde_json::error::{Category, Error as SerdeError};
-use std::{error::Error, fmt};
+use std::{error::Error, fmt, path::Path};
 
 /// An error that occurred during parsing or hydrating a filmReel file
 #[derive(Debug, PartialEq)]
@@ -28,15 +28,6 @@ impl Error for FrError {
     }
 }
 
-macro_rules! errorf {
-    ($fmt: expr, $err_name:expr, $err_msg:expr, $item: expr) => {
-        writeln!($fmt, "\n{}", "=======================".red())?;
-        writeln!($fmt, "{}: {}", $err_name.yellow(), $err_msg)?;
-        writeln!($fmt, "{} {}", "-->".bright_black(), $item)?;
-        writeln!($fmt, "{}", "=======================".red())?;
-    };
-}
-
 impl From<SerdeError> for FrError {
     fn from(err: SerdeError) -> FrError {
         match err.classify() {
@@ -58,6 +49,14 @@ impl From<HashKeyError> for FrError {
     }
 }
 
+macro_rules! errorf {
+    ($fmt: expr, $err_name:expr, $err_msg:expr, $item: expr) => {
+        writeln!($fmt, "\n{}", "=======================".red())?;
+        writeln!($fmt, "{}: {}", $err_name.yellow(), $err_msg)?;
+        writeln!($fmt, "{} {}", "-->".bright_black(), $item)?;
+        writeln!($fmt, "{}", "=======================".red())?;
+    };
+}
 impl fmt::Display for FrError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
@@ -94,5 +93,20 @@ impl fmt::Display for FrError {
                 Ok(())
             }
         }
+    }
+}
+
+/// returns a FrError::File with the filepath as context
+pub trait WithPath<T, P> {
+    fn with_path(self, path: P) -> Result<T, FrError>;
+}
+
+impl<T, E, P> WithPath<T, P> for Result<T, E>
+where
+    E: std::fmt::Display,
+    P: AsRef<Path>,
+{
+    fn with_path(self, path: P) -> Result<T, FrError> {
+        self.map_err(|e| FrError::File(path.as_ref().to_string_lossy().to_string(), e.to_string()))
     }
 }
